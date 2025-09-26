@@ -45,6 +45,16 @@ class FirestoreService {
         .toList();
   }
 
+  static Future<List<custom_user.User>> getSellers() async {
+    final snapshot = await _firestore
+        .collection(_usersCollection)
+        .where('role', isEqualTo: 'seller')
+        .get();
+    return snapshot.docs
+        .map((doc) => custom_user.User.fromJson(doc.data()))
+        .toList();
+  }
+
   static Future<void> updateUser(custom_user.User user) async {
     await _firestore
         .collection(_usersCollection)
@@ -53,11 +63,12 @@ class FirestoreService {
   }
 
   // Tiendas
-  static Future<void> createStore(custom_store.Store store) async {
-    await _firestore
-        .collection(_storesCollection)
-        .doc(store.id)
-        .set(store.toJson());
+  static Future<custom_store.Store> createStore(
+      custom_store.Store store) async {
+    final doc = _firestore.collection(_storesCollection).doc();
+    final newStore = store.copyWith(id: doc.id);
+    await doc.set(newStore.toJson());
+    return newStore;
   }
 
   static Future<custom_store.Store?> getStore(String storeId) async {
@@ -80,10 +91,23 @@ class FirestoreService {
     final snapshot = await _firestore
         .collection(_storesCollection)
         .where('isActive', isEqualTo: true)
+        .where('isOpen', isEqualTo: true)
         .get();
     return snapshot.docs
         .map((doc) => custom_store.Store.fromJson(doc.data()))
         .toList();
+  }
+
+  static Future<custom_store.Store?> getStoreByOwner(String ownerId) async {
+    final snapshot = await _firestore
+        .collection(_storesCollection)
+        .where('ownerId', isEqualTo: ownerId)
+        .limit(1)
+        .get();
+    if (snapshot.docs.isNotEmpty) {
+      return custom_store.Store.fromJson(snapshot.docs.first.data());
+    }
+    return null;
   }
 
   static Future<void> updateStore(custom_store.Store store) async {

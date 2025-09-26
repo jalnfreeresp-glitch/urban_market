@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:urban_market/models/store_model.dart';
-import 'package:urban_market/services/api_service.dart';
+import 'package:urban_market/services/firestore_service.dart';
 
 class StoresScreen extends StatefulWidget {
   static const routeName = '/stores';
@@ -17,7 +17,7 @@ class _StoresScreenState extends State<StoresScreen> {
   @override
   void initState() {
     super.initState();
-    _storesFuture = ApiService().getStores();
+    _storesFuture = FirestoreService.getActiveStores();
   }
 
   @override

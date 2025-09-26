@@ -9,6 +9,7 @@ class Store {
   final int totalReviews;
   final String ownerId;
   final bool isActive;
+  final bool isOpen;
   final String category;
   final String openingTime;
   final String closingTime;
@@ -24,6 +25,7 @@ class Store {
     required this.totalReviews,
     required this.ownerId,
     this.isActive = true,
+    this.isOpen = false,
     this.category = '',
     this.openingTime = '09:00',
     this.closingTime = '21:00',
@@ -41,6 +43,7 @@ class Store {
       totalReviews: json['totalReviews'] ?? 0,
       ownerId: json['ownerId'] ?? '',
       isActive: json['isActive'] ?? true,
+      isOpen: json['isOpen'] ?? false,
       category: json['category'] ?? '',
       openingTime: json['openingTime'] ?? '09:00',
       closingTime: json['closingTime'] ?? '21:00',
@@ -59,9 +62,44 @@ class Store {
       'totalReviews': totalReviews,
       'ownerId': ownerId,
       'isActive': isActive,
+      'isOpen': isOpen,
       'category': category,
       'openingTime': openingTime,
       'closingTime': closingTime,
     };
+  }
+
+  Store copyWith({
+    String? id,
+    String? name,
+    String? description,
+    String? imageUrl,
+    String? address,
+    String? phone,
+    double? rating,
+    int? totalReviews,
+    String? ownerId,
+    bool? isActive,
+    bool? isOpen,
+    String? category,
+    String? openingTime,
+    String? closingTime,
+  }) {
+    return Store(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
+      address: address ?? this.address,
+      phone: phone ?? this.phone,
+      rating: rating ?? this.rating,
+      totalReviews: totalReviews ?? this.totalReviews,
+      ownerId: ownerId ?? this.ownerId,
+      isActive: isActive ?? this.isActive,
+      isOpen: isOpen ?? this.isOpen,
+      category: category ?? this.category,
+      openingTime: openingTime ?? this.openingTime,
+      closingTime: closingTime ?? this.closingTime,
+    );
   }
 }

@@ -1,11 +1,37 @@
-// lib/screens/seller/seller_home_screen.dart
+'''
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:urban_market/models/store_model.dart';
 import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/services/firestore_service.dart';
 
-class SellerHomeScreen extends StatelessWidget {
+class SellerHomeScreen extends StatefulWidget {
   const SellerHomeScreen({super.key});
+
+  @override
+  State<SellerHomeScreen> createState() => _SellerHomeScreenState();
+}
+
+class _SellerHomeScreenState extends State<SellerHomeScreen> {
+  Store? _store;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStore();
+  }
+
+  Future<void> _fetchStore() async {
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    if (user != null) {
+      final store = await FirestoreService.getStoreByOwner(user.id);
+      if (mounted) {
+        setState(() {
+          _store = store;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +44,9 @@ class SellerHomeScreen extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       drawer: _buildDrawer(context, authProvider),
-      body: _buildBody(context),
+      body: _store == null
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(context),
     );
   }
 
@@ -55,12 +83,12 @@ class SellerHomeScreen extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.store),
-            title: const Text('Mis Tiendas'),
+            title: const Text('Mi Tienda'),
             onTap: () {
               Navigator.pop(context);
             },
           ),
-          ListTile(
+          Listile(
             leading: const Icon(Icons.shopping_basket),
             title: const Text('Mis Productos'),
             onTap: () {
@@ -94,12 +122,28 @@ class SellerHomeScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Bienvenido, Vendedor',
-            style: TextStyle(
+          Text(
+            'Bienvenido, ${_store!.name}',
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Text(_store!.isOpen ? 'Tienda Abierta' : 'Tienda Cerrada'),
+              Switch(
+                value: _store!.isOpen,
+                onChanged: (value) async {
+                  final updatedStore = _store!.copyWith(isOpen: value);
+                  await FirestoreService.updateStore(updatedStore);
+                  setState(() {
+                    _store = updatedStore;
+                  });
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           _buildStatsCard(),
@@ -148,15 +192,11 @@ class SellerHomeScreen extends StatelessWidget {
   }
 
   Future<List<int>> _fetchSellerStats() async {
-    // Suponiendo que el vendedor tiene un userId único
-    // Aquí puedes obtener el userId del vendedor autenticado
-    // Si tienes AuthProvider disponible, puedes usarlo
-    // Por simplicidad, aquí se usa un userId de ejemplo
-    const userId = '';
+    if (_store == null) return [0, 0, 0];
     final productos =
-        (await FirestoreService.getProductsByStore(userId)).length;
-    final pedidos = (await FirestoreService.getOrdersByStore(userId)).length;
-    final ventas = (await FirestoreService.getOrdersByStore(userId))
+        (await FirestoreService.getProductsByStore(_store!.id)).length;
+    final pedidos = (await FirestoreService.getOrdersByStore(_store!.id)).length;
+    final ventas = (await FirestoreService.getOrdersByStore(_store!.id))
         .fold<int>(0, (sum, order) => sum + order.totalAmount.toInt());
     return [productos, pedidos, ventas];
   }
@@ -273,3 +313,4 @@ class SellerHomeScreen extends StatelessWidget {
     );
   }
 }
+'''
