@@ -275,7 +275,6 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
     Color color,
     VoidCallback onTap,
   ) {
-    // This is a test comment to check if changes are being applied.
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -283,12 +282,12 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Color.fromRGBO(158, 158, 158, 0.3),
+              color: Color.fromRGBO(158, 158, 158, 0.3)
               spreadRadius: 1,
               blurRadius: 5,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
