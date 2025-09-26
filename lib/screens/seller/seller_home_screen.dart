@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:urban_market/providers/auth_provider.dart';
+import 'package:urban_market/services/firestore_service.dart';
 
 class SellerHomeScreen extends StatelessWidget {
   const SellerHomeScreen({super.key});
@@ -110,31 +111,54 @@ class SellerHomeScreen extends StatelessWidget {
   }
 
   Widget _buildStatsCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const Text(
-              'Estadísticas',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return FutureBuilder<List<int>>(
+      future: _fetchSellerStats(),
+      builder: (context, snapshot) {
+        final productos = snapshot.hasData ? snapshot.data![0].toString() : '-';
+        final pedidos = snapshot.hasData ? snapshot.data![1].toString() : '-';
+        final ventas = snapshot.hasData ? 'S/. ${snapshot.data![2]}' : '-';
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
               children: [
-                _buildStatItem('Productos', '15', Icons.shopping_basket),
-                _buildStatItem('Pedidos', '42', Icons.list_alt),
-                _buildStatItem('Ventas', 'S/. 1,245', Icons.attach_money),
+                const Text(
+                  'Estadísticas',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatItem(
+                        'Productos', productos, Icons.shopping_basket),
+                    _buildStatItem('Pedidos', pedidos, Icons.list_alt),
+                    _buildStatItem('Ventas', ventas, Icons.attach_money),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
+  }
+
+  Future<List<int>> _fetchSellerStats() async {
+    // Suponiendo que el vendedor tiene un userId único
+    // Aquí puedes obtener el userId del vendedor autenticado
+    // Si tienes AuthProvider disponible, puedes usarlo
+    // Por simplicidad, aquí se usa un userId de ejemplo
+    const userId = '';
+    final productos =
+        (await FirestoreService.getProductsByStore(userId)).length;
+    final pedidos = (await FirestoreService.getOrdersByStore(userId)).length;
+    final ventas = (await FirestoreService.getOrdersByStore(userId))
+        .fold<int>(0, (sum, order) => sum + order.totalAmount.toInt());
+    return [productos, pedidos, ventas];
   }
 
   Widget _buildStatItem(String title, String value, IconData icon) {

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:urban_market/models/store_model.dart';
 import 'package:urban_market/providers/auth_provider.dart';
-import 'package:urban_market/providers/product_provider.dart';
+import 'package:urban_market/services/firestore_service.dart';
 
 class ManageStoresScreen extends StatefulWidget {
   static const routeName = '/admin-manage-stores';
@@ -26,106 +26,89 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
         foregroundColor: Colors.white,
       ),
       drawer: _buildDrawer(context, authProvider),
-      body: Consumer<ProductProvider>(
-        builder: (context, productProvider, child) {
-          // Aquí cargaríamos las tiendas desde el provider
-          // Por ahora usamos una lista de ejemplo
-          final stores = [
-            Store(
-              id: 's1',
-              name: 'Tienda de Comida',
-              description: 'Restaurantes, Comida Rápida',
-              imageUrl: 'https://via.placeholder.com/150',
-              address: 'Calle Principal 123',
-              phone: '987654321',
-              rating: 4.8,
-              totalReviews: 120,
-              ownerId: 'u1',
-              category: 'Restaurant',
-              openingTime: '09:00',
-              closingTime: '22:00',
-            ),
-            Store(
-              id: 's2',
-              name: 'Supermercado ABC',
-              description: 'Supermercados, Verduras',
-              imageUrl: 'https://via.placeholder.com/150',
-              address: 'Av. Central 456',
-              phone: '987654322',
-              rating: 4.6,
-              totalReviews: 89,
-              ownerId: 'u2',
-              category: 'Grocery',
-              openingTime: '08:00',
-              closingTime: '23:00',
-            ),
-          ];
-
-          return ListView.builder(
-            itemCount: stores.length,
-            itemBuilder: (context, index) {
-              final store = stores[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListTile(
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      store.imageUrl,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 60,
-                          height: 60,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.store),
-                        );
-                      },
-                    ),
-                  ),
-                  title: Text(
-                    store.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    '${store.category} - ${store.address}',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed: () {
-                          // Editar tienda
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          store.isActive
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: store.isActive ? Colors.green : Colors.red,
-                        ),
-                        onPressed: () {
-                          // Activar/desactivar tienda
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(store.isActive
-                                  ? 'Tienda desactivada'
-                                  : 'Tienda activada'),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+      body: FutureBuilder<List<Store>>(
+        future: FirestoreService.getAllStores(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final stores = snapshot.data ?? [];
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    const Text('Total de tiendas: ',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(stores.length.toString()),
+                  ],
                 ),
-              );
-            },
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: stores.length,
+                  itemBuilder: (context, index) {
+                    final store = stores[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: ListTile(
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: store.imageUrl.isNotEmpty
+                              ? Image.network(
+                                  store.imageUrl,
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 60,
+                                      height: 60,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.store),
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.store),
+                                ),
+                        ),
+                        title: Text(store.name,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('${store.category} - ${store.address}',
+                            maxLines: 2, overflow: TextOverflow.ellipsis),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () {},
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                store.isActive
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color:
+                                    store.isActive ? Colors.green : Colors.red,
+                              ),
+                              onPressed: () {},
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),

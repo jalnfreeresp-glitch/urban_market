@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:urban_market/providers/auth_provider.dart';
+import 'package:urban_market/services/firestore_service.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   static const routeName = '/admin';
@@ -122,31 +123,46 @@ class AdminHomeScreen extends StatelessWidget {
   }
 
   Widget _buildStatsCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const Text(
-              'Estadísticas Generales',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return FutureBuilder<List<int>>(
+      future: _fetchStats(),
+      builder: (context, snapshot) {
+        final tiendas = snapshot.hasData ? snapshot.data![0].toString() : '-';
+        final pedidos = snapshot.hasData ? snapshot.data![1].toString() : '-';
+        final usuarios = snapshot.hasData ? snapshot.data![2].toString() : '-';
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
               children: [
-                _buildStatItem('Tiendas', '15', Icons.store),
-                _buildStatItem('Pedidos', '128', Icons.shopping_cart),
-                _buildStatItem('Usuarios', '342', Icons.people),
+                const Text(
+                  'Estadísticas Generales',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatItem('Tiendas', tiendas, Icons.store),
+                    _buildStatItem('Pedidos', pedidos, Icons.shopping_cart),
+                    _buildStatItem('Usuarios', usuarios, Icons.people),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
+  }
+
+  Future<List<int>> _fetchStats() async {
+    final tiendas = (await FirestoreService.getAllStores()).length;
+    final pedidos = (await FirestoreService.getAllOrders()).length;
+    final usuarios = (await FirestoreService.getAllUsers()).length;
+    return [tiendas, pedidos, usuarios];
   }
 
   Widget _buildStatItem(String title, String value, IconData icon) {

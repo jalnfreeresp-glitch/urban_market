@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:urban_market/providers/auth_provider.dart';
+import 'package:urban_market/services/firestore_service.dart';
 
 class CustomerHomeScreen extends StatelessWidget {
   static const routeName = '/customer';
@@ -209,32 +210,32 @@ class CustomerHomeScreen extends StatelessWidget {
   }
 
   Widget _buildFeaturedStores(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Tiendas Destacadas',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildStoreCard(
-          'Tienda de Comida',
-          'Restaurantes, Comida Rápida',
-          '4.8 ★ (120)',
-          'assets/images/food_store.jpg',
-          context,
-        ),
-        _buildStoreCard(
-          'Supermercado ABC',
-          'Supermercados, Verduras',
-          '4.6 ★ (89)',
-          'assets/images/grocery_store.jpg',
-          context,
-        ),
-      ],
+    return FutureBuilder<List<dynamic>>(
+      // dynamic para Store
+      future: FirestoreService.getAllStores(),
+      builder: (context, snapshot) {
+        final stores = snapshot.data ?? [];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Tiendas Destacadas',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...stores.take(5).map((store) => _buildStoreCard(
+                  store.name,
+                  store.category,
+                  '${store.rating.toStringAsFixed(1)} ★ (${store.totalReviews})',
+                  store.imageUrl,
+                  context,
+                )),
+          ],
+        );
+      },
     );
   }
 
@@ -242,7 +243,7 @@ class CustomerHomeScreen extends StatelessWidget {
     String name,
     String description,
     String rating,
-    String image,
+    String imageUrl,
     BuildContext context,
   ) {
     return Card(
@@ -258,20 +259,27 @@ class CustomerHomeScreen extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  image,
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 60,
-                      height: 60,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.store),
-                    );
-                  },
-                ),
+                child: imageUrl.isNotEmpty
+                    ? Image.network(
+                        imageUrl,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.store),
+                          );
+                        },
+                      )
+                    : Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.store),
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(
