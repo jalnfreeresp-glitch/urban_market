@@ -1,4 +1,3 @@
-'''
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:urban_market/models/user_model.dart' as user_model;
@@ -55,13 +54,14 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   if (user == null)
                     TextFormField(
                       controller: passwordController,
-                      decoration: const InputDecoration(labelText: 'Contraseña'),
+                      decoration:
+                          const InputDecoration(labelText: 'Contraseña'),
                       obscureText: true,
                       validator: (value) =>
                           value!.isEmpty ? 'Campo requerido' : null,
                     ),
                   DropdownButtonFormField<String>(
-                    value: selectedRole,
+                    initialValue: selectedRole,
                     decoration: const InputDecoration(labelText: 'Rol'),
                     items: ['customer', 'seller', 'admin', 'delivery']
                         .map((role) => DropdownMenuItem(
@@ -107,11 +107,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                       );
                       await FirestoreService.updateUser(updatedUser);
                     }
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     Navigator.of(context).pop();
                     setState(() {});
                   } catch (e) {
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Error: $e'),
@@ -173,4 +173,3 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     );
   }
 }
-'''
