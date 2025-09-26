@@ -15,7 +15,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isLogin = true; // true for login, false for signup
 
   @override
   void dispose() {
@@ -32,28 +31,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
       try {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-        if (_isLogin) {
-          await authProvider.login(
-              _emailController.text.trim(), _passwordController.text);
-        } else {
-          // Para signup, necesitas pedir nombre y teléfono
-          await authProvider.signup(
-            _emailController.text.trim(),
-            _passwordController.text,
-            'Usuario', // nombre temporal
-            '123456789', // teléfono temporal
-            'customer', // rol temporal
-          );
-        }
+        await authProvider.login(
+            _emailController.text.trim(), _passwordController.text);
 
         if (mounted) {
           Navigator.of(context)
-              .pushReplacementNamed(authProvider.userRole == 'admin'
+              .pushReplacementNamed(authProvider.user?.role == 'admin'
                   ? '/admin'
-                  : authProvider.userRole == 'seller'
+                  : authProvider.user?.role == 'seller'
                       ? '/seller'
-                      : authProvider.userRole == 'delivery'
+                      : authProvider.user?.role == 'delivery'
                           ? '/delivery'
                           : '/customer');
         }
@@ -76,15 +63,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _loginAs(String role) {
-    // Esta es una función temporal para cambiar de usuario rápidamente
-    Navigator.of(context).pushReplacementNamed(role == 'admin'
-        ? '/admin'
-        : role == 'seller'
-            ? '/seller'
-            : role == 'delivery'
-                ? '/delivery'
-                : '/customer');
+  void _loginAs(String email, String password) {
+    _emailController.text = email;
+    _passwordController.text = password;
+    _submitForm();
   }
 
   @override
@@ -172,9 +154,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator()
-                            : Text(
-                                _isLogin ? 'Iniciar Sesión' : 'Registrarse',
-                                style: const TextStyle(fontSize: 16),
+                            : const Text(
+                                'Iniciar Sesión',
+                                style: TextStyle(fontSize: 16),
                               ),
                       ),
                     ),
@@ -182,37 +164,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(_isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _isLogin = !_isLogin;
-                      });
-                    },
-                    child: Text(
-                        _isLogin ? 'Regístrate aquí' : 'Inicia sesión aquí'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
               const Text(
                 'O iniciar sesión rápidamente como:',
                 style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 16),
-              // Botones temporales para cambiar de usuario rápidamente
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
                 alignment: WrapAlignment.center,
                 children: [
-                  _buildQuickLoginButton('Admin', Colors.red, 'admin'),
-                  _buildQuickLoginButton('Vendedor', Colors.blue, 'seller'),
-                  _buildQuickLoginButton('Cliente', Colors.green, 'customer'),
-                  _buildQuickLoginButton('Delivery', Colors.orange, 'delivery'),
+                  _buildQuickLoginButton(
+                      'Admin', Colors.red, 'admin@test.com', 'password'),
+                  _buildQuickLoginButton(
+                      'Vendedor', Colors.blue, 'seller@test.com', 'password'),
+                  _buildQuickLoginButton('Cliente', Colors.green,
+                      'customer@test.com', 'password'),
+                  _buildQuickLoginButton('Delivery', Colors.orange,
+                      'delivery@test.com', 'password'),
                 ],
               ),
             ],
@@ -222,9 +191,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildQuickLoginButton(String label, Color color, String role) {
+  Widget _buildQuickLoginButton(
+      String label, Color color, String email, String password) {
     return ElevatedButton(
-      onPressed: () => _loginAs(role),
+      onPressed: () => _loginAs(email, password),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,

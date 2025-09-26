@@ -30,6 +30,14 @@ class FirestoreService {
     return null;
   }
 
+  static Stream<List<custom_user.User>> getUsersStream() {
+    return _firestore.collection(_usersCollection).snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => custom_user.User.fromJson(doc.data()))
+          .toList();
+    });
+  }
+
   static Future<List<custom_user.User>> getAllUsers() async {
     final snapshot = await _firestore.collection(_usersCollection).get();
     return snapshot.docs

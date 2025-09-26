@@ -1,12 +1,11 @@
-// lib/screens/admin/manage_users_screen.dart (actualizado)
+// lib/screens/admin/manage_users_screen.dart
+
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:urban_market/models/user_model.dart';
-import 'package:urban_market/providers/auth_provider.dart';
+import 'package:urban_market/services/firestore_service.dart';
 
 class ManageUsersScreen extends StatefulWidget {
-  static const routeName = '/admin-manage-users';
-
   const ManageUsersScreen({super.key});
 
   @override
@@ -14,105 +13,303 @@ class ManageUsersScreen extends StatefulWidget {
 }
 
 class _ManageUsersScreenState extends State<ManageUsersScreen> {
-  @override
-  Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  Future<void> _callCloudFunction({
+    required BuildContext dialogContext,
+    required GlobalKey<FormState> formKey,
+    required Future<void> Function() function,
+    required Function(bool) setLoading,
+  }) async {
+    if (!formKey.currentState!.validate()) return;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gestionar Usuarios'),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
-      ),
-      drawer: _buildDrawer(context, authProvider),
-      body: ListView.builder(
-        itemCount: _getUsers().length,
-        itemBuilder: (context, index) {
-          final user = _getUsers()[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.deepPurple,
-                child: Text(
-                  user.name.substring(0, 1),
-                  style: const TextStyle(color: Colors.white),
+    setLoading(true);
+    try {
+      await function();
+
+      if (!dialogContext.mounted) return;
+      Navigator.of(dialogContext).pop();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Operación realizada con éxito'),
+            backgroundColor: Colors.green),
+      );
+    } on FirebaseFunctionsException catch (e) {
+      if (!dialogContext.mounted) return;
+      ScaffoldMessenger.of(dialogContext).showSnackBar(
+        SnackBar(
+            content: Text('Error: ${e.message}'), backgroundColor: Colors.red),
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  void _showCreateUserDialog() {
+    final formKey = GlobalKey<FormState>();
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    String selectedRole = 'customer';
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          return AlertDialog(
+            title: const Text('Crear Nuevo Usuario'),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Nombre'),
+                      validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
+                    ),
+                    TextFormField(
+                      controller: emailController,
+                      decoration: const InputDecoration(labelText: 'Email'),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (v) => v!.isEmpty || !v.contains('@')
+                          ? 'Email inválido'
+                          : null,
+                    ),
+                    TextFormField(
+                      controller: passwordController,
+                      decoration:
+                          const InputDecoration(labelText: 'Contraseña'),
+                      obscureText: true,
+                      validator: (v) =>
+                          v!.length < 6 ? 'Mínimo 6 caracteres' : null,
+                    ),
+                    TextFormField(
+                      controller: phoneController,
+                      decoration: const InputDecoration(labelText: 'Teléfono'),
+                      keyboardType: TextInputType.phone,
+                      validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
+                    ),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedRole,
+                      decoration: const InputDecoration(labelText: 'Rol'),
+                      items: ['customer', 'seller', 'delivery', 'admin']
+                          .map((role) => DropdownMenuItem(
+                                value: role,
+                                child: Text(_getRoleName(role)),
+                              ))
+                          .toList(),
+                      onChanged: (value) =>
+                          setDialogState(() => selectedRole = value!),
+                    ),
+                  ],
                 ),
               ),
-              title: Text(
-                user.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(user.email),
-                  Text('Rol: ${_getRoleName(user.role)}'),
-                  Text('Creado: ${user.createdAt.toString().split(' ')[0]}'),
-                ],
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () {
-                      // Editar usuario
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      user.isActive ? Icons.visibility : Icons.visibility_off,
-                      color: user.isActive ? Colors.green : Colors.red,
-                    ),
-                    onPressed: () {
-                      // Activar/desactivar usuario
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(user.isActive
-                              ? 'Usuario desactivado'
-                              : 'Usuario activado'),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        _callCloudFunction(
+                          dialogContext: dialogContext,
+                          formKey: formKey,
+                          setLoading: (val) =>
+                              setDialogState(() => isLoading = val),
+                          function: () async {
+                            final callable = FirebaseFunctions.instance
+                                .httpsCallable('createUser');
+                            await callable.call(<String, dynamic>{
+                              'email': emailController.text.trim(),
+                              'password': passwordController.text,
+                              'name': nameController.text.trim(),
+                              'phone': phoneController.text.trim(),
+                              'role': selectedRole,
+                            });
+                          },
+                        );
+                      },
+                child: isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text('Crear'),
+              ),
+            ],
           );
         },
       ),
     );
   }
 
-  List<User> _getUsers() {
-    // Lista de ejemplo de usuarios
-    return [
-      User(
-        id: 'u1',
-        name: 'Juan Pérez',
-        email: 'juan@example.com',
-        phone: '987654321',
-        role: 'seller',
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
+  void _showEditUserDialog(User user) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: user.name);
+    final phoneController = TextEditingController(text: user.phone);
+    String selectedRole = user.role;
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          return AlertDialog(
+            title: const Text('Editar Usuario'),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(labelText: 'Nombre')),
+                    TextFormField(
+                        controller: phoneController,
+                        decoration:
+                            const InputDecoration(labelText: 'Teléfono')),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedRole,
+                      decoration: const InputDecoration(labelText: 'Rol'),
+                      items: ['customer', 'seller', 'delivery', 'admin']
+                          .map((role) => DropdownMenuItem(
+                                value: role,
+                                child: Text(_getRoleName(role)),
+                              ))
+                          .toList(),
+                      onChanged: (value) =>
+                          setDialogState(() => selectedRole = value!),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        _callCloudFunction(
+                          dialogContext: dialogContext,
+                          formKey: formKey,
+                          setLoading: (val) =>
+                              setDialogState(() => isLoading = val),
+                          function: () async {
+                            final callable = FirebaseFunctions.instance
+                                .httpsCallable('updateUser');
+                            await callable.call(<String, dynamic>{
+                              'uid': user.id,
+                              'name': nameController.text.trim(),
+                              'phone': phoneController.text.trim(),
+                              'role': selectedRole,
+                            });
+                          },
+                        );
+                      },
+                child: isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text('Guardar'),
+              ),
+            ],
+          );
+        },
       ),
-      User(
-        id: 'u2',
-        name: 'María García',
-        email: 'maria@example.com',
-        phone: '987654322',
-        role: 'customer',
-        createdAt: DateTime.now().subtract(const Duration(days: 15)),
+    );
+  }
+
+  Future<void> _updateUserStatus(String uid, bool newStatus) async {
+    try {
+      final callable =
+          FirebaseFunctions.instance.httpsCallable('setUserActiveStatus');
+      await callable.call(<String, dynamic>{
+        'uid': uid,
+        'isActive': newStatus,
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Estado actualizado'), backgroundColor: Colors.green),
+      );
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Error: ${e.message}'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Gestionar Usuarios'),
       ),
-      User(
-        id: 'u3',
-        name: 'Carlos López',
-        email: 'carlos@example.com',
-        phone: '987654323',
-        role: 'delivery',
-        createdAt: DateTime.now().subtract(const Duration(days: 10)),
+      body: StreamBuilder<List<User>>(
+        stream: FirestoreService.getUsersStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No se encontraron usuarios.'));
+          }
+
+          final users = snapshot.data!;
+
+          return ListView.builder(
+            itemCount: users.length,
+            itemBuilder: (context, index) {
+              final user = users[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    child: Text(
+                        user.name.isNotEmpty ? user.name.substring(0, 1) : 'U'),
+                  ),
+                  title: Text(user.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle:
+                      Text('${user.email}\nRol: ${_getRoleName(user.role)}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () => _showEditUserDialog(user),
+                      ),
+                      Switch(
+                        value: user.isActive,
+                        onChanged: (newValue) =>
+                            _updateUserStatus(user.id, newValue),
+                        activeThumbColor: Colors.green,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
-    ];
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCreateUserDialog,
+        child: const Icon(Icons.add),
+      ),
+    );
   }
 
   String _getRoleName(String role) {
@@ -124,85 +321,9 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       case 'customer':
         return 'Cliente';
       case 'delivery':
-        return 'Delivery';
+        return 'Repartidor';
       default:
         return role;
     }
-  }
-
-  Widget _buildDrawer(BuildContext context, AuthProvider authProvider) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.deepPurple,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  'Urban Market',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'Administrador',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.store),
-            title: const Text('Gestionar Tiendas'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/admin-manage-stores');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text('Gestionar Usuarios'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, '/admin-manage-users');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.shopping_cart),
-            title: const Text('Gestionar Pedidos'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/admin-manage-orders');
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Configuración'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Cerrar Sesión'),
-            onTap: () {
-              authProvider.logout();
-              Navigator.pushReplacementNamed(context, '/');
-            },
-          ),
-        ],
-      ),
-    );
   }
 }

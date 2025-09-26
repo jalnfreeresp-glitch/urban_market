@@ -1,10 +1,13 @@
 // lib/models/user_model.dart (actualizado)
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class User {
   final String id;
   final String name;
   final String email;
   final String phone;
   final String role; // 'admin', 'seller', 'customer', 'delivery'
+  final String? address;
   final DateTime createdAt;
   final bool isActive;
 
@@ -14,6 +17,7 @@ class User {
     required this.email,
     required this.phone,
     required this.role,
+    this.address,
     required this.createdAt,
     this.isActive = true,
   });
@@ -25,8 +29,8 @@ class User {
       email: json['email'] ?? '',
       phone: json['phone'] ?? '',
       role: json['role'] ?? 'customer',
-      createdAt:
-          DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      address: json['address'],
+      createdAt: (json['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isActive: json['isActive'] ?? true,
     );
   }
@@ -38,7 +42,8 @@ class User {
       'email': email,
       'phone': phone,
       'role': role,
-      'createdAt': createdAt.toIso8601String(),
+      'address': address,
+      'createdAt': Timestamp.fromDate(createdAt), // Convertir a Timestamp para Firestore
       'isActive': isActive,
     };
   }
@@ -50,6 +55,7 @@ class User {
     String? email,
     String? phone,
     String? role,
+    String? address,
     DateTime? createdAt,
     bool? isActive,
   }) {
@@ -59,6 +65,7 @@ class User {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       role: role ?? this.role,
+      address: address ?? this.address,
       createdAt: createdAt ?? this.createdAt,
       isActive: isActive ?? this.isActive,
     );
