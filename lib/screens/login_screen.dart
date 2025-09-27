@@ -35,14 +35,14 @@ class _LoginScreenState extends State<LoginScreen> {
             _emailController.text.trim(), _passwordController.text);
 
         if (mounted) {
-          Navigator.of(context)
-              .pushReplacementNamed(authProvider.user?.role == 'Administrador'
-                  ? '/admin'
-                  : authProvider.user?.role == 'Vendedor'
-                      ? '/seller'
-                      : authProvider.user?.role == 'Repartidor'
-                          ? '/delivery'
-                          : '/customer');
+          final userRole = authProvider.user?.role.toLowerCase();
+          Navigator.of(context).pushReplacementNamed(userRole == 'administrador'
+              ? '/admin'
+              : userRole == 'vendedor'
+                  ? '/seller'
+                  : userRole == 'repartidor'
+                      ? '/delivery'
+                      : '/customer');
         }
       } catch (error) {
         if (mounted) {

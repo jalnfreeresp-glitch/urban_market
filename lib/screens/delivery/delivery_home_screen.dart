@@ -114,8 +114,7 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
                                 subtitle: Text('Cantidad: ${item.quantity}'),
                                 trailing: Text(
                                     'S/. ${(item.price * item.quantity).toStringAsFixed(2)}'),
-                              ))
-                          .toList(),
+                              )),
                       const SizedBox(height: 16),
                       Row(
                         children: [

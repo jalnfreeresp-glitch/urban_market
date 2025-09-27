@@ -22,6 +22,9 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     final passwordController = TextEditingController();
     final storeIdController = TextEditingController(text: user?.storeId);
     String selectedRole = user?.role ?? 'Cliente';
+    if (selectedRole.toLowerCase() == 'admin') {
+      selectedRole = 'Administrador';
+    }
 
     showDialog(
       context: context,

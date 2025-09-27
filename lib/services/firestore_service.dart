@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 // lib/services/firestore_service.dart (actualizado)
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:urban_market/models/order_model.dart' as custom_order;
@@ -23,11 +24,26 @@ class FirestoreService {
   }
 
   static Future<custom_user.UserModel?> getUser(String userId) async {
-    final doc = await _firestore.collection(_usersCollection).doc(userId).get();
-    if (doc.exists) {
-      return custom_user.UserModel.fromJson(doc.data()!);
+    try {
+      final doc =
+          await _firestore.collection(_usersCollection).doc(userId).get();
+      if (doc.exists) {
+        debugPrint('User data from Firestore: ${doc.data()}');
+        // Aquí está el cambio clave:
+        final data = doc.data();
+        if (data is Map<String, dynamic>) {
+          return custom_user.UserModel.fromJson(data);
+        } else {
+          debugPrint('Error: User data is not a Map<String, dynamic>. It is ${data.runtimeType}');
+          // Considera devolver null o lanzar una excepción más específica.
+          return null;
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error getting user: $e');
+      return null;
     }
-    return null;
   }
 
   static Stream<List<custom_user.UserModel>> getUsersStream() {

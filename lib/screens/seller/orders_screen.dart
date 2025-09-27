@@ -99,8 +99,7 @@ class OrdersScreen extends StatelessWidget {
                                   subtitle: Text('Cantidad: ${item.quantity}'),
                                   trailing: Text(
                                       'S/. ${(item.price * item.quantity).toStringAsFixed(2)}'),
-                                ))
-                            .toList(),
+                                )),
                         if (order.deliveryPersonName != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 8.0),
