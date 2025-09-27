@@ -4,10 +4,24 @@ import 'package:provider/provider.dart';
 import 'package:urban_market/models/order_model.dart';
 import 'package:urban_market/providers/order_provider.dart';
 
-class DeliveryHomeScreen extends StatelessWidget {
+class DeliveryHomeScreen extends StatefulWidget {
   static const routeName = '/delivery';
 
   const DeliveryHomeScreen({super.key});
+
+  @override
+  State<DeliveryHomeScreen> createState() => _DeliveryHomeScreenState();
+}
+
+class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Using addPostFrameCallback to avoid calling provider before the build is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<OrderProvider>(context, listen: false).loadInProcessOrders();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,18 +33,18 @@ class DeliveryHomeScreen extends StatelessWidget {
       ),
       body: Consumer<OrderProvider>(
         builder: (context, orderProvider, child) {
-          final pendingOrders = orderProvider.pendingOrders;
+          final inProcessOrders = orderProvider.inProcessOrders;
 
-          if (pendingOrders.isEmpty) {
+          if (inProcessOrders.isEmpty) {
             return const Center(
               child: Text('No hay pedidos pendientes de entrega'),
             );
           }
 
           return ListView.builder(
-            itemCount: pendingOrders.length,
+            itemCount: inProcessOrders.length,
             itemBuilder: (context, index) {
-              final order = pendingOrders[index];
+              final order = inProcessOrders[index];
               return Card(
                 margin: const EdgeInsets.all(10),
                 child: Padding(
@@ -110,7 +124,7 @@ class DeliveryHomeScreen extends StatelessWidget {
                               onPressed: () {
                                 // Aceptar el pedido
                                 orderProvider.updateOrderStatus(
-                                    order.id, OrderStatus.preparing);
+                                    order.id, OrderStatus.enCamino);
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
@@ -125,7 +139,7 @@ class DeliveryHomeScreen extends StatelessWidget {
                               onPressed: () {
                                 // Rechazar el pedido
                                 orderProvider.updateOrderStatus(
-                                    order.id, OrderStatus.cancelled);
+                                    order.id, OrderStatus.cancelado);
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
@@ -149,42 +163,30 @@ class DeliveryHomeScreen extends StatelessWidget {
 
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
-      case OrderStatus.pending:
+      case OrderStatus.pendientePago:
         return Colors.orange;
-      case OrderStatus.confirmed:
+      case OrderStatus.en_proceso:
         return Colors.blue;
-      case OrderStatus.preparing:
-        return Colors.yellow[700]!;
-      case OrderStatus.ready:
-        return Colors.purple;
-      case OrderStatus.pickedUp:
-        return Colors.indigo;
-      case OrderStatus.delivering:
+      case OrderStatus.en_camino:
         return Colors.teal;
-      case OrderStatus.delivered:
+      case OrderStatus.entregado:
         return Colors.green;
-      case OrderStatus.cancelled:
+      case OrderStatus.cancelado:
         return Colors.red;
     }
   }
 
   String _getStatusText(OrderStatus status) {
     switch (status) {
-      case OrderStatus.pending:
-        return 'Pendiente';
-      case OrderStatus.confirmed:
-        return 'Confirmado';
-      case OrderStatus.preparing:
-        return 'En preparación';
-      case OrderStatus.ready:
-        return 'Listo';
-      case OrderStatus.pickedUp:
-        return 'Recogido';
-      case OrderStatus.delivering:
-        return 'En camino';
-      case OrderStatus.delivered:
+      case OrderStatus.pendientePago:
+        return 'Pendiente de Pago';
+      case OrderStatus.en_proceso:
+        return 'En Proceso';
+      case OrderStatus.en_camino:
+        return 'En Camino';
+      case OrderStatus.entregado:
         return 'Entregado';
-      case OrderStatus.cancelled:
+      case OrderStatus.cancelado:
         return 'Cancelado';
     }
   }

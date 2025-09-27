@@ -1,4 +1,3 @@
-// lib/screens/admin/manage_stores_screen.dart (actualizado)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:urban_market/models/store_model.dart';
@@ -16,7 +15,7 @@ class ManageStoresScreen extends StatefulWidget {
 }
 
 class _ManageStoresScreenState extends State<ManageStoresScreen> {
-  void _showStoreDialog({Store? store}) async {
+  void _showStoreDialog({StoreModel? store}) async {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: store?.name);
     final descriptionController =
@@ -28,6 +27,12 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
         TextEditingController(text: store?.openingTime);
     final closingTimeController =
         TextEditingController(text: store?.closingTime);
+    final paymentPhoneNumberController =
+        TextEditingController(text: store?.paymentPhoneNumber);
+    final paymentBankNameController =
+        TextEditingController(text: store?.paymentBankName);
+    final paymentNationalIdController =
+        TextEditingController(text: store?.paymentNationalId);
     String? selectedOwnerId = store?.ownerId;
 
     final sellers = await FirestoreService.getSellers();
@@ -89,11 +94,32 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                     validator: (value) =>
                         value!.isEmpty ? 'Campo requerido' : null,
                   ),
+                  TextFormField(
+                    controller: paymentPhoneNumberController,
+                    decoration: const InputDecoration(
+                        labelText: 'Número de teléfono (Pagomovil)'),
+                    validator: (value) =>
+                        value!.isEmpty ? 'Campo requerido' : null,
+                  ),
+                  TextFormField(
+                    controller: paymentBankNameController,
+                    decoration:
+                        const InputDecoration(labelText: 'Banco (Pagomovil)'),
+                    validator: (value) =>
+                        value!.isEmpty ? 'Campo requerido' : null,
+                  ),
+                  TextFormField(
+                    controller: paymentNationalIdController,
+                    decoration: const InputDecoration(
+                        labelText: 'Cédula de Identidad (Pagomovil)'),
+                    validator: (value) =>
+                        value!.isEmpty ? 'Campo requerido' : null,
+                  ),
                   DropdownButtonFormField<String>(
                     initialValue: selectedOwnerId,
                     decoration:
                         const InputDecoration(labelText: 'Dueño de la tienda'),
-                    items: sellers.map((user_model.User seller) {
+                    items: sellers.map((user_model.UserModel seller) {
                       return DropdownMenuItem<String>(
                         value: seller.id,
                         child: Text(seller.name),
@@ -119,7 +145,7 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
             ElevatedButton(
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
-                  final newStore = Store(
+                  final newStore = StoreModel(
                     id: store?.id ?? '',
                     name: nameController.text,
                     description: descriptionController.text,
@@ -134,6 +160,9 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                     totalReviews: store?.totalReviews ?? 0,
                     isActive: store?.isActive ?? true,
                     isOpen: store?.isOpen ?? false,
+                    paymentPhoneNumber: paymentPhoneNumberController.text,
+                    paymentBankName: paymentBankNameController.text,
+                    paymentNationalId: paymentNationalIdController.text,
                   );
 
                   if (store == null) {
@@ -166,7 +195,7 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
         foregroundColor: Colors.white,
       ),
       drawer: _buildDrawer(context, authProvider),
-      body: FutureBuilder<List<Store>>(
+      body: FutureBuilder<List<StoreModel>>(
         future: FirestoreService.getAllStores(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -220,8 +249,7 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                                 ),
                         ),
                         title: Text(store.name,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text('${store.category} - ${store.address}',
                             maxLines: 2, overflow: TextOverflow.ellipsis),
                         trailing: Row(

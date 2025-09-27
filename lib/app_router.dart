@@ -1,5 +1,3 @@
-// lib/app_router.dart
-
 import 'package:flutter/material.dart';
 import 'package:urban_market/models/product_model.dart';
 import 'package:urban_market/models/store_model.dart';
@@ -39,11 +37,11 @@ class AppRouter {
       case '/stores':
         return MaterialPageRoute(builder: (_) => const StoresScreen());
       case '/store-products':
-        final store = settings.arguments as Store;
+        final store = settings.arguments as StoreModel;
         return MaterialPageRoute(
             builder: (_) => StoreProductsScreen(store: store));
       case '/product-detail':
-        final product = settings.arguments as Product;
+        final product = settings.arguments as ProductModel;
         return MaterialPageRoute(
             builder: (_) => ProductDetailScreen(product: product));
 

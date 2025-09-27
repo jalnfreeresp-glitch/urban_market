@@ -1,6 +1,7 @@
 // lib/screens/customer/customer_home_screen.dart (actualizado)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:urban_market/models/store_model.dart';
 import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/services/firestore_service.dart';
 
@@ -210,10 +211,12 @@ class CustomerHomeScreen extends StatelessWidget {
   }
 
   Widget _buildFeaturedStores(BuildContext context) {
-    return FutureBuilder<List<dynamic>>(
-      // dynamic para Store
+    return FutureBuilder<List<StoreModel>>(
       future: FirestoreService.getAllStores(),
       builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
         final stores = snapshot.data ?? [];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,32 +229,20 @@ class CustomerHomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ...stores.take(5).map((store) => _buildStoreCard(
-                  store.name,
-                  store.category,
-                  '${store.rating.toStringAsFixed(1)} ★ (${store.totalReviews})',
-                  store.imageUrl,
-                  context,
-                )),
+            ...stores.take(5).map((store) => _buildStoreCard(store, context)),
           ],
         );
       },
     );
   }
 
-  Widget _buildStoreCard(
-    String name,
-    String description,
-    String rating,
-    String imageUrl,
-    BuildContext context,
-  ) {
+  Widget _buildStoreCard(StoreModel store, BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
           // Navegar a la pantalla de productos de la tienda
-          Navigator.pushNamed(context, '/store-products');
+          Navigator.pushNamed(context, '/store-products', arguments: store);
         },
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -259,9 +250,9 @@ class CustomerHomeScreen extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: imageUrl.isNotEmpty
+                child: store.imageUrl.isNotEmpty
                     ? Image.network(
-                        imageUrl,
+                        store.imageUrl,
                         width: 60,
                         height: 60,
                         fit: BoxFit.cover,
@@ -287,7 +278,7 @@ class CustomerHomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name,
+                      store.name,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -295,7 +286,7 @@ class CustomerHomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      description,
+                      store.category,
                       style: const TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
@@ -311,7 +302,7 @@ class CustomerHomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          rating,
+                          '${store.rating.toStringAsFixed(1)} ★ (${store.totalReviews})',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,

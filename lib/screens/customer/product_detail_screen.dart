@@ -5,7 +5,7 @@ import '../../models/product_model.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   static const routeName = '/product-detail';
-  final Product product;
+  final ProductModel product;
 
   const ProductDetailScreen({super.key, required this.product});
 
@@ -25,7 +25,7 @@ class ProductDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Image.asset(
+            Image.network(
               product.imageUrl,
               height: 300,
               width: double.infinity,
@@ -47,7 +47,7 @@ class ProductDetailScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
-                '\$${product.price.toStringAsFixed(2)}',
+                'S/. ${product.price.toStringAsFixed(2)}',
                 style: TextStyle(
                   fontSize: 24,
                   color: Colors.grey[800],
@@ -82,19 +82,24 @@ class ProductDetailScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
-                  // --- ESTA ES LA LÍNEA CLAVE ---
-                  // Llama al método add de nuestro CartProvider
-                  cart.add(product);
-
-                  // Mostramos una notificación para confirmar
-                  ScaffoldMessenger.of(context)
-                      .hideCurrentSnackBar(); // Oculta la anterior si existe
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${product.name} fue añadido al carrito.'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
+                  try {
+                    cart.addItem(product, 1);
+                    ScaffoldMessenger.of(context)
+                        .hideCurrentSnackBar(); // Oculta la anterior si existe
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${product.name} fue añadido al carrito.'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  } catch (error) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(error.toString()),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 },
               ),
             ),

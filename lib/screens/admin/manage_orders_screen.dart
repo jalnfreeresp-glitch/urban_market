@@ -1,7 +1,6 @@
 // lib/screens/admin/manage_orders_screen.dart (actualizado)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:urban_market/models/order_model.dart';
 import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/providers/order_provider.dart';
 
@@ -16,6 +15,16 @@ class ManageOrdersScreen extends StatefulWidget {
 
 class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      Provider.of<OrderProvider>(context, listen: false)
+          .loadOrders(authProvider.user!.id, authProvider.user!.role);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -28,11 +37,39 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
       drawer: _buildDrawer(context, authProvider),
       body: Consumer<OrderProvider>(
         builder: (context, orderProvider, child) {
-          final orders = <Order>[];
+          final orders = orderProvider.orders;
+          if (orders.isEmpty) {
+            return const Center(child: Text('No hay pedidos.'));
+          }
           return ListView.builder(
             itemCount: orders.length,
             itemBuilder: (context, index) {
-              return const Card();
+              final order = orders[index];
+              return Card(
+                margin: const EdgeInsets.all(10),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pedido #${order.id}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Cliente: ${order.customerName}'),
+                      Text('Tienda: ${order.storeName}'),
+                      Text(
+                          'Total: S/. ${order.totalAmount.toStringAsFixed(2)}'),
+                      Text(
+                          'Estado: ${order.status.toString().split('.').last}'),
+                    ],
+                  ),
+                ),
+              );
             },
           );
         },

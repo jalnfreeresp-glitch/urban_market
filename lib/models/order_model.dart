@@ -1,15 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum OrderStatus {
-  pending,
-  confirmed,
-  preparing,
-  ready,
-  pickedUp,
-  delivering,
-  delivered,
-  cancelled,
+  pendientePago,
+  enProceso,
+  enCamino,
+  entregado,
+  cancelado,
 }
 
-class Order {
+class OrderModel {
   final String id;
   final String customerId;
   final String customerName;
@@ -17,16 +16,17 @@ class Order {
   final String customerAddress;
   final String storeId;
   final String storeName;
-  final List<OrderItem> items;
+  final List<OrderItemModel> items;
   final double totalAmount;
   final DateTime orderDate;
   final OrderStatus status;
   final String? deliveryPersonId;
   final String? deliveryPersonName;
   final DateTime? deliveryTime;
+  final String? paymentReference;
   final String notes;
 
-  Order({
+  OrderModel({
     required this.id,
     required this.customerId,
     required this.customerName,
@@ -37,15 +37,16 @@ class Order {
     required this.items,
     required this.totalAmount,
     required this.orderDate,
-    this.status = OrderStatus.pending,
+    this.status = OrderStatus.pendientePago,
     this.deliveryPersonId,
     this.deliveryPersonName,
     this.deliveryTime,
+    this.paymentReference,
     this.notes = '',
   });
 
-  factory Order.fromJson(Map<String, dynamic> json) {
-    return Order(
+  factory OrderModel.fromJson(Map<String, dynamic> json) {
+    return OrderModel(
       id: json['id'] ?? '',
       customerId: json['customerId'] ?? '',
       customerName: json['customerName'] ?? '',
@@ -54,16 +55,17 @@ class Order {
       storeId: json['storeId'] ?? '',
       storeName: json['storeName'] ?? '',
       items: (json['items'] as List<dynamic>)
-          .map((item) => OrderItem.fromJson(item))
+          .map((item) => OrderItemModel.fromJson(item))
           .toList(),
       totalAmount: (json['totalAmount'] ?? 0).toDouble(),
-      orderDate: DateTime.parse(json['orderDate']),
-      status: OrderStatus.values[json['status']],
+      orderDate: (json['orderDate'] as Timestamp).toDate(),
+      status: OrderStatus.values[json['status'] ?? OrderStatus.pendientePago.index],
       deliveryPersonId: json['deliveryPersonId'],
       deliveryPersonName: json['deliveryPersonName'],
       deliveryTime: json['deliveryTime'] != null
-          ? DateTime.parse(json['deliveryTime'])
+          ? (json['deliveryTime'] as Timestamp).toDate()
           : null,
+      paymentReference: json['paymentReference'],
       notes: json['notes'] ?? '',
     );
   }
@@ -79,24 +81,63 @@ class Order {
       'storeName': storeName,
       'items': items.map((item) => item.toJson()).toList(),
       'totalAmount': totalAmount,
-      'orderDate': orderDate.toIso8601String(),
+      'orderDate': Timestamp.fromDate(orderDate),
       'status': status.index,
       'deliveryPersonId': deliveryPersonId,
       'deliveryPersonName': deliveryPersonName,
-      'deliveryTime': deliveryTime?.toIso8601String(),
+      'deliveryTime': deliveryTime != null ? Timestamp.fromDate(deliveryTime!) : null,
+      'paymentReference': paymentReference,
       'notes': notes,
     };
   }
+
+  OrderModel copyWith({
+    String? id,
+    String? customerId,
+    String? customerName,
+    String? customerPhone,
+    String? customerAddress,
+    String? storeId,
+    String? storeName,
+    List<OrderItemModel>? items,
+    double? totalAmount,
+    DateTime? orderDate,
+    OrderStatus? status,
+    String? deliveryPersonId,
+    String? deliveryPersonName,
+    DateTime? deliveryTime,
+    String? paymentReference,
+    String? notes,
+  }) {
+    return OrderModel(
+      id: id ?? this.id,
+      customerId: customerId ?? this.customerId,
+      customerName: customerName ?? this.customerName,
+      customerPhone: customerPhone ?? this.customerPhone,
+      customerAddress: customerAddress ?? this.customerAddress,
+      storeId: storeId ?? this.storeId,
+      storeName: storeName ?? this.storeName,
+      items: items ?? this.items,
+      totalAmount: totalAmount ?? this.totalAmount,
+      orderDate: orderDate ?? this.orderDate,
+      status: status ?? this.status,
+      deliveryPersonId: deliveryPersonId ?? this.deliveryPersonId,
+      deliveryPersonName: deliveryPersonName ?? this.deliveryPersonName,
+      deliveryTime: deliveryTime ?? this.deliveryTime,
+      paymentReference: paymentReference ?? this.paymentReference,
+      notes: notes ?? this.notes,
+    );
+  }
 }
 
-class OrderItem {
+class OrderItemModel {
   final String productId;
   final String productName;
   final double price;
   final int quantity;
   final String storeId;
 
-  OrderItem({
+  OrderItemModel({
     required this.productId,
     required this.productName,
     required this.price,
@@ -104,8 +145,8 @@ class OrderItem {
     required this.storeId,
   });
 
-  factory OrderItem.fromJson(Map<String, dynamic> json) {
-    return OrderItem(
+  factory OrderItemModel.fromJson(Map<String, dynamic> json) {
+    return OrderItemModel(
       productId: json['productId'] ?? '',
       productName: json['productName'] ?? '',
       price: (json['price'] ?? 0).toDouble(),

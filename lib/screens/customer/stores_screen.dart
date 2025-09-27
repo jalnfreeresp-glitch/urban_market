@@ -12,7 +12,7 @@ class StoresScreen extends StatefulWidget {
 }
 
 class _StoresScreenState extends State<StoresScreen> {
-  late Future<List<Store>> _storesFuture;
+  late Future<List<StoreModel>> _storesFuture;
 
   @override
   void initState() {
@@ -28,7 +28,7 @@ class _StoresScreenState extends State<StoresScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
-      body: FutureBuilder<List<Store>>(
+      body: FutureBuilder<List<StoreModel>>(
         future: _storesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

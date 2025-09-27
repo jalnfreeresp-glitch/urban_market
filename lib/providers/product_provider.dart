@@ -5,13 +5,13 @@ import 'package:urban_market/models/store_model.dart';
 import 'package:urban_market/services/firestore_service.dart';
 
 class ProductProvider with ChangeNotifier {
-  List<Product> _products = [];
-  List<Product> _filteredProducts = [];
-  List<Store> _stores = [];
+  List<ProductModel> _products = [];
+  List<ProductModel> _filteredProducts = [];
+  List<StoreModel> _stores = [];
 
-  List<Product> get products => _products;
-  List<Product> get filteredProducts => _filteredProducts;
-  List<Store> get stores => _stores;
+  List<ProductModel> get products => _products;
+  List<ProductModel> get filteredProducts => _filteredProducts;
+  List<StoreModel> get stores => _stores;
 
   Future<void> loadProducts() async {
     try {
@@ -36,7 +36,7 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addProduct(Product product) async {
+  Future<void> addProduct(ProductModel product) async {
     try {
       await FirestoreService.createProduct(product);
       _products.add(product);
@@ -49,7 +49,7 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
-  Future<void> updateProduct(Product product) async {
+  Future<void> updateProduct(ProductModel product) async {
     try {
       await FirestoreService.updateProduct(product);
       final index = _products.indexWhere((p) => p.id == product.id);
@@ -69,7 +69,7 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
-  List<Product> getProductsByStore(String storeId) {
+  List<ProductModel> getProductsByStore(String storeId) {
     return _products.where((product) => product.storeId == storeId).toList();
   }
 

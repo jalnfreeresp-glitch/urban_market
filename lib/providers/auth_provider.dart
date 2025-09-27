@@ -1,19 +1,17 @@
-// lib/providers/auth_provider.dart (Corregido)
-
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/foundation.dart';
-import 'package:urban_market/models/user_model.dart'; // Asegúrate que esta ruta es correcta y contiene la clase 'User'
+import 'package:urban_market/models/user_model.dart';
 import 'package:urban_market/services/firestore_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final fb_auth.FirebaseAuth _firebaseAuth = fb_auth.FirebaseAuth.instance;
 
-  User? _user; // CORREGIDO: UserModel -> User
+  UserModel? _user;
   bool _isLoading = true;
 
   // --- Getters Públicos para la UI ---
 
-  User? get user => _user; // CORREGIDO: UserModel -> User
+  UserModel? get user => _user;
   bool get isLoading => _isLoading;
   bool get isAuth => _user != null;
 
@@ -56,8 +54,7 @@ class AuthProvider with ChangeNotifier {
       final firebaseUser = userCredential.user;
 
       if (firebaseUser != null) {
-        final newUser = User(
-          // CORREGIDO: UserModel -> User
+        final newUser = UserModel(
           id: firebaseUser.uid,
           name: name,
           email: email,

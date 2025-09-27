@@ -12,7 +12,7 @@ class SellerHomeScreen extends StatefulWidget {
 }
 
 class _SellerHomeScreenState extends State<SellerHomeScreen> {
-  Store? _store;
+  StoreModel? _store;
 
   @override
   void initState() {

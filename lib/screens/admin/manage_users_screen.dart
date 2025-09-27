@@ -14,117 +14,132 @@ class ManageUsersScreen extends StatefulWidget {
 }
 
 class _ManageUsersScreenState extends State<ManageUsersScreen> {
-  void _showUserDialog({user_model.User? user}) {
+  void _showUserDialog({user_model.UserModel? user}) {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: user?.name);
     final emailController = TextEditingController(text: user?.email);
     final phoneController = TextEditingController(text: user?.phone);
     final passwordController = TextEditingController();
-    String selectedRole = user?.role ?? 'customer';
+    final storeIdController = TextEditingController(text: user?.storeId);
+    String selectedRole = user?.role ?? 'Cliente';
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(user == null ? 'Añadir Usuario' : 'Editar Usuario'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Nombre'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(labelText: 'Email'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  TextFormField(
-                    controller: phoneController,
-                    decoration: const InputDecoration(labelText: 'Teléfono'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  if (user == null)
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            title: Text(user == null ? 'Añadir Usuario' : 'Editar Usuario'),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     TextFormField(
-                      controller: passwordController,
-                      decoration:
-                          const InputDecoration(labelText: 'Contraseña'),
-                      obscureText: true,
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Nombre'),
                       validator: (value) =>
                           value!.isEmpty ? 'Campo requerido' : null,
                     ),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedRole,
-                    decoration: const InputDecoration(labelText: 'Rol'),
-                    items: ['customer', 'seller', 'admin', 'delivery']
-                        .map((role) => DropdownMenuItem(
-                              value: role,
-                              child: Text(role),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedRole = value!;
-                      });
-                    },
-                  ),
-                ],
+                    TextFormField(
+                      controller: emailController,
+                      decoration: const InputDecoration(labelText: 'Email'),
+                      validator: (value) =>
+                          value!.isEmpty ? 'Campo requerido' : null,
+                    ),
+                    TextFormField(
+                      controller: phoneController,
+                      decoration: const InputDecoration(labelText: 'Teléfono'),
+                      validator: (value) =>
+                          value!.isEmpty ? 'Campo requerido' : null,
+                    ),
+                    if (user == null)
+                      TextFormField(
+                        controller: passwordController,
+                        decoration:
+                            const InputDecoration(labelText: 'Contraseña'),
+                        obscureText: true,
+                        validator: (value) =>
+                            value!.isEmpty ? 'Campo requerido' : null,
+                      ),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedRole,
+                      decoration: const InputDecoration(labelText: 'Rol'),
+                      items:
+                          ['Cliente', 'Vendedor', 'Administrador', 'Repartidor']
+                              .map((role) => DropdownMenuItem(
+                                    value: role,
+                                    child: Text(role),
+                                  ))
+                              .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedRole = value!;
+                        });
+                      },
+                    ),
+                    if (selectedRole == 'Vendedor')
+                      TextFormField(
+                        controller: storeIdController,
+                        decoration:
+                            const InputDecoration(labelText: 'ID de la Tienda'),
+                        validator: (value) =>
+                            value!.isEmpty ? 'Campo requerido' : null,
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  final authProvider = context.read<AuthProvider>();
-                  try {
-                    if (user == null) {
-                      await authProvider.signup(
-                        emailController.text,
-                        passwordController.text,
-                        nameController.text,
-                        phoneController.text,
-                        selectedRole,
-                        '', // Address is not needed here
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (formKey.currentState!.validate()) {
+                    final authProvider = context.read<AuthProvider>();
+                    try {
+                      if (user == null) {
+                        await authProvider.signup(
+                          emailController.text,
+                          passwordController.text,
+                          nameController.text,
+                          phoneController.text,
+                          selectedRole,
+                          '', // Address is not needed here
+                        );
+                      } else {
+                        final updatedUser = user.copyWith(
+                            name: nameController.text,
+                            email: emailController.text,
+                            phone: phoneController.text,
+                            role: selectedRole,
+                            storeId: selectedRole == 'Vendedor'
+                                ? storeIdController.text
+                                : null);
+                        await FirestoreService.updateUser(updatedUser);
+                      }
+                      if (!context.mounted) return;
+                      Navigator.of(context).pop();
+                      // Using this to refresh the list
+                      super.setState(() {});
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: Colors.red,
+                        ),
                       );
-                    } else {
-                      final updatedUser = user.copyWith(
-                        name: nameController.text,
-                        email: emailController.text,
-                        phone: phoneController.text,
-                        role: selectedRole,
-                      );
-                      await FirestoreService.updateUser(updatedUser);
                     }
-                    if (!context.mounted) return;
-                    Navigator.of(context).pop();
-                    setState(() {});
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
                   }
-                }
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
-        );
+                },
+                child: const Text('Guardar'),
+              ),
+            ],
+          );
+        });
       },
     );
   }
@@ -137,7 +152,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
-      body: FutureBuilder<List<user_model.User>>(
+      body: FutureBuilder<List<user_model.UserModel>>(
         future: FirestoreService.getAllUsers(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

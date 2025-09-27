@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:urban_market/models/product_model.dart';
 import 'package:urban_market/models/store_model.dart';
+import 'package:urban_market/providers/cart_provider.dart';
 import 'package:urban_market/providers/product_provider.dart';
 
 class StoreProductsScreen extends StatefulWidget {
   static const routeName = '/store-products';
 
-  final Store store;
+  final StoreModel store;
 
   const StoreProductsScreen({super.key, required this.store});
 
@@ -21,6 +23,106 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
     Provider.of<ProductProvider>(context, listen: false)
         .filterProductsByStore(widget.store.id);
     super.initState();
+  }
+
+  void _showAddToCartDialog(ProductModel product) {
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    final quantityController = TextEditingController(text: '1');
+    int quantity = 1;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AlertDialog(
+            title: Text(product.name),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Stock disponible: ${product.stock}'),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove),
+                      onPressed: () {
+                        if (quantity > 1) {
+                          setState(() {
+                            quantity--;
+                            quantityController.text = quantity.toString();
+                          });
+                        }
+                      },
+                    ),
+                    SizedBox(
+                      width: 50,
+                      child: TextField(
+                        controller: quantityController,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          final newQuantity = int.tryParse(value);
+                          if (newQuantity != null &&
+                              newQuantity > 0 &&
+                              newQuantity <= product.stock) {
+                            quantity = newQuantity;
+                          }
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () {
+                        if (quantity < product.stock) {
+                          setState(() {
+                            quantity++;
+                            quantityController.text = quantity.toString();
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                child: const Text('Cancelar'),
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                },
+              ),
+              ElevatedButton(
+                child: const Text('Añadir al carrito'),
+                onPressed: () {
+                  final finalQuantity =
+                      int.tryParse(quantityController.text) ?? 1;
+                  if (finalQuantity > 0 && finalQuantity <= product.stock) {
+                    cartProvider.addItem(product, finalQuantity);
+                    Navigator.of(ctx).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${product.name} añadido al carrito!'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content:
+                            Text('La cantidad debe ser menor o igual al stock'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -124,10 +226,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                     ],
                   ),
                   onTap: () {
-                    Navigator.of(context).pushNamed(
-                      '/product-detail',
-                      arguments: product,
-                    );
+                    _showAddToCartDialog(product);
                   },
                 ),
               );

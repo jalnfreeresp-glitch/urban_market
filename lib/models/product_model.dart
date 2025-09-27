@@ -1,4 +1,4 @@
-class Product {
+class ProductModel {
   final String id;
   final String name;
   final String description;
@@ -10,7 +10,7 @@ class Product {
   final List<String> categories;
   final bool isActive;
 
-  Product({
+  ProductModel({
     required this.id,
     required this.name,
     required this.description,
@@ -23,8 +23,8 @@ class Product {
     this.isActive = true,
   });
 
-  factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
+    return ProductModel(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       description: json['description'] ?? '',
@@ -54,7 +54,7 @@ class Product {
   }
 
   // Método copyWith para crear copias con campos modificados
-  Product copyWith({
+  ProductModel copyWith({
     String? id,
     String? name,
     String? description,
@@ -66,7 +66,7 @@ class Product {
     List<String>? categories,
     bool? isActive,
   }) {
-    return Product(
+    return ProductModel(
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,

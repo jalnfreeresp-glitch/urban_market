@@ -36,11 +36,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (mounted) {
           Navigator.of(context)
-              .pushReplacementNamed(authProvider.user?.role == 'admin'
+              .pushReplacementNamed(authProvider.user?.role == 'Administrador'
                   ? '/admin'
-                  : authProvider.user?.role == 'seller'
+                  : authProvider.user?.role == 'Vendedor'
                       ? '/seller'
-                      : authProvider.user?.role == 'delivery'
+                      : authProvider.user?.role == 'Repartidor'
                           ? '/delivery'
                           : '/customer');
         }

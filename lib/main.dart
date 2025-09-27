@@ -80,13 +80,13 @@ class AuthWrapper extends StatelessWidget {
       // Si hay un usuario, redirige según su rol
       // NOTA: Asegúrate de que tu modelo 'user' en AuthProvider tenga una propiedad 'role'
       switch (authProvider.user!.role) {
-        case 'customer':
+        case 'Cliente':
           return const CustomerHomeScreen();
-        case 'seller':
+        case 'Vendedor':
           return const SellerHomeScreen();
-        case 'admin':
+        case 'Administrador':
           return const AdminHomeScreen();
-        case 'delivery':
+        case 'Repartidor':
           return const DeliveryHomeScreen();
         default:
           // Si el rol no se reconoce, se envía al login por seguridad

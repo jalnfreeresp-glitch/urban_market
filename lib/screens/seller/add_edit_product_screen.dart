@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:urban_market/models/product_model.dart';
+import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/providers/product_provider.dart';
 
 class AddEditProductScreen extends StatefulWidget {
   static const routeName = '/add-edit-product';
-  final Product? product;
+  final ProductModel? product;
 
   const AddEditProductScreen({super.key, this.product});
 
@@ -40,14 +41,16 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       _formKey.currentState!.save();
       final productProvider =
           Provider.of<ProductProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.user;
 
-      final newProduct = Product(
+      final newProduct = ProductModel(
         id: widget.product?.id ?? DateTime.now().toString(),
         name: _name,
         description: _description,
         price: _price,
         imageUrl: _imageUrl,
-        storeId: 's1', // Deberías obtener el ID del vendedor actual
+        storeId: user!.storeId!,
         storeName: _storeName,
         stock: _stock,
         categories: _categories,

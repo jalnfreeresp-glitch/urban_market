@@ -1,4 +1,4 @@
-class Store {
+class StoreModel {
   final String id;
   final String name;
   final String description;
@@ -13,8 +13,12 @@ class Store {
   final String category;
   final String openingTime;
   final String closingTime;
+  // Campos de Pagomovil
+  final String paymentPhoneNumber;
+  final String paymentBankName;
+  final String paymentNationalId;
 
-  Store({
+  StoreModel({
     required this.id,
     required this.name,
     required this.description,
@@ -29,10 +33,13 @@ class Store {
     this.category = '',
     this.openingTime = '09:00',
     this.closingTime = '21:00',
+    required this.paymentPhoneNumber,
+    required this.paymentBankName,
+    required this.paymentNationalId,
   });
 
-  factory Store.fromJson(Map<String, dynamic> json) {
-    return Store(
+  factory StoreModel.fromJson(Map<String, dynamic> json) {
+    return StoreModel(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       description: json['description'] ?? '',
@@ -47,6 +54,9 @@ class Store {
       category: json['category'] ?? '',
       openingTime: json['openingTime'] ?? '09:00',
       closingTime: json['closingTime'] ?? '21:00',
+      paymentPhoneNumber: json['paymentPhoneNumber'] ?? '',
+      paymentBankName: json['paymentBankName'] ?? '',
+      paymentNationalId: json['paymentNationalId'] ?? '',
     );
   }
 
@@ -66,10 +76,13 @@ class Store {
       'category': category,
       'openingTime': openingTime,
       'closingTime': closingTime,
+      'paymentPhoneNumber': paymentPhoneNumber,
+      'paymentBankName': paymentBankName,
+      'paymentNationalId': paymentNationalId,
     };
   }
 
-  Store copyWith({
+  StoreModel copyWith({
     String? id,
     String? name,
     String? description,
@@ -84,8 +97,11 @@ class Store {
     String? category,
     String? openingTime,
     String? closingTime,
+    String? paymentPhoneNumber,
+    String? paymentBankName,
+    String? paymentNationalId,
   }) {
-    return Store(
+    return StoreModel(
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
@@ -100,6 +116,9 @@ class Store {
       category: category ?? this.category,
       openingTime: openingTime ?? this.openingTime,
       closingTime: closingTime ?? this.closingTime,
+      paymentPhoneNumber: paymentPhoneNumber ?? this.paymentPhoneNumber,
+      paymentBankName: paymentBankName ?? this.paymentBankName,
+      paymentNationalId: paymentNationalId ?? this.paymentNationalId,
     );
   }
 }
