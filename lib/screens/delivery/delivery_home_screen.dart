@@ -165,9 +165,9 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
     switch (status) {
       case OrderStatus.pendientePago:
         return Colors.orange;
-      case OrderStatus.en_proceso:
+      case OrderStatus.enProceso:
         return Colors.blue;
-      case OrderStatus.en_camino:
+      case OrderStatus.enCamino:
         return Colors.teal;
       case OrderStatus.entregado:
         return Colors.green;
@@ -180,9 +180,9 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
     switch (status) {
       case OrderStatus.pendientePago:
         return 'Pendiente de Pago';
-      case OrderStatus.en_proceso:
+      case OrderStatus.enProceso:
         return 'En Proceso';
-      case OrderStatus.en_camino:
+      case OrderStatus.enCamino:
         return 'En Camino';
       case OrderStatus.entregado:
         return 'Entregado';
