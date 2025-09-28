@@ -1,288 +1,132 @@
-import 'package:flutter/foundation.dart';
-// lib/services/firestore_service.dart (actualizado)
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:urban_market/models/order_model.dart' as custom_order;
-import 'package:urban_market/models/product_model.dart' as custom_product;
-import 'package:urban_market/models/store_model.dart' as custom_store;
-import 'package:urban_market/models/user_model.dart' as custom_user;
+// Se usan alias en todas las importaciones de modelos para consistencia.
+import 'package:urban_market/models/order_model.dart' as om;
+import 'package:urban_market/models/product_model.dart' as pm;
+import 'package:urban_market/models/store_model.dart' as sm;
+import 'package:urban_market/models/user_model.dart' as um;
 
 class FirestoreService {
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // Colecciones
-  static const String _usersCollection = 'users';
-  static const String _storesCollection = 'stores';
-  static const String _productsCollection = 'products';
-  static const String _ordersCollection = 'orders';
+  // Se usan conversores para asegurar el tipado al leer/escribir en Firestore.
+  CollectionReference<um.UserModel> get _users =>
+      _db.collection('users').withConverter<um.UserModel>(
+            fromFirestore: (snap, _) =>
+                um.UserModel.fromMap(snap.id, snap.data()!),
+            toFirestore: (user, _) => user.toMap(),
+          );
 
-  // Usuarios
-  static Future<void> createUser(custom_user.UserModel user) async {
-    await _firestore
-        .collection(_usersCollection)
-        .doc(user.id)
-        .set(user.toJson());
+  CollectionReference<sm.StoreModel> get _stores =>
+      _db.collection('stores').withConverter<sm.StoreModel>(
+            fromFirestore: (snap, _) =>
+                sm.StoreModel.fromMap(snap.id, snap.data()!),
+            toFirestore: (store, _) => store.toMap(),
+          );
+
+  CollectionReference<pm.ProductModel> get _products =>
+      _db.collection('products').withConverter<pm.ProductModel>(
+            fromFirestore: (snap, _) =>
+                pm.ProductModel.fromMap(snap.id, snap.data()!),
+            toFirestore: (product, _) => product.toMap(),
+          );
+
+  CollectionReference<om.OrderModel> get _orders =>
+      _db.collection('orders').withConverter<om.OrderModel>(
+            fromFirestore: (snap, _) =>
+                om.OrderModel.fromMap(snap.id, snap.data()!),
+            toFirestore: (order, _) => order.toMap(),
+          );
+
+  // --- MÉTODOS DE USUARIO ---
+  Future<void> createUser(um.UserModel user) => _users.doc(user.id).set(user);
+  Future<um.UserModel?> getUser(String userId) async =>
+      (await _users.doc(userId).get()).data();
+  Stream<List<um.UserModel>> getUsersStream() => _users
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) => doc.data()).toList());
+  Future<void> updateUser(um.UserModel user) =>
+      _users.doc(user.id).update(user.toMap());
+
+  // Método añadido para obtener solo los vendedores.
+  Stream<List<um.UserModel>> getSellersStream() => _users
+      .where('role', isEqualTo: 'Vendedor')
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) => doc.data()).toList());
+
+  // --- MÉTODOS DE TIENDA ---
+  Future<void> createStore(sm.StoreModel store) =>
+      _stores.doc(store.id).set(store);
+
+  // Método añadido para obtener todas las tiendas.
+  Stream<List<sm.StoreModel>> getStoresStream() => _stores
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) => doc.data()).toList());
+
+  Stream<List<sm.StoreModel>> getActiveStoresStream() => _stores
+      .where('isActive', isEqualTo: true)
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) => doc.data()).toList());
+  Future<sm.StoreModel?> getStoreByOwner(String ownerId) async {
+    final snap =
+        await _stores.where('ownerId', isEqualTo: ownerId).limit(1).get();
+    return snap.docs.isNotEmpty ? snap.docs.first.data() : null;
   }
 
-  static Future<custom_user.UserModel?> getUser(String userId) async {
-    try {
-      final doc =
-          await _firestore.collection(_usersCollection).doc(userId).get();
-      if (doc.exists) {
-        debugPrint('User data from Firestore: ${doc.data()}');
-        // Aquí está el cambio clave:
-        final data = doc.data();
-        if (data is Map<String, dynamic>) {
-          return custom_user.UserModel.fromJson(data);
-        } else {
-          debugPrint('Error: User data is not a Map<String, dynamic>. It is ${data.runtimeType}');
-          // Considera devolver null o lanzar una excepción más específica.
-          return null;
-        }
-      }
-      return null;
-    } catch (e) {
-      debugPrint('Error getting user: $e');
-      return null;
-    }
-  }
+  Future<void> updateStore(sm.StoreModel store) =>
+      _stores.doc(store.id).update(store.toMap());
+  Future<sm.StoreModel?> getStore(String storeId) async =>
+      (await _stores.doc(storeId).get()).data();
 
-  static Stream<List<custom_user.UserModel>> getUsersStream() {
-    return _firestore.collection(_usersCollection).snapshots().map((snapshot) {
-      return snapshot.docs
-          .map((doc) => custom_user.UserModel.fromJson(doc.data()))
-          .toList();
-    });
-  }
+  // --- MÉTODOS DE PRODUCTO ---
+  Future<void> createProduct(pm.ProductModel product) =>
+      _products.doc(product.id).set(product);
+  Stream<List<pm.ProductModel>> getActiveProductsStore() => _products
+      .where('isActive', isEqualTo: true)
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) => doc.data()).toList());
+  Stream<List<pm.ProductModel>> getProductsByStoreStream(String storeId) =>
+      _products
+          .where('storeId', isEqualTo: storeId)
+          .snapshots()
+          .map((snap) => snap.docs.map((doc) => doc.data()).toList());
+  Future<void> updateProduct(pm.ProductModel product) =>
+      _products.doc(product.id).update(product.toMap());
 
-  static Future<List<custom_user.UserModel>> getAllUsers() async {
-    final snapshot = await _firestore.collection(_usersCollection).get();
-    return snapshot.docs
-        .map((doc) => custom_user.UserModel.fromJson(doc.data()))
-        .toList();
-  }
+  // --- MÉTODOS DE ÓRDENES ---
+  Future<void> createOrder(om.OrderModel order) =>
+      _orders.doc(order.id).set(order);
 
-  static Future<List<custom_user.UserModel>> getSellers() async {
-    final snapshot = await _firestore
-        .collection(_usersCollection)
-        .where('role', isEqualTo: 'Vendedor')
-        .get();
-    return snapshot.docs
-        .map((doc) => custom_user.UserModel.fromJson(doc.data()))
-        .toList();
-  }
+  Stream<List<om.OrderModel>> getOrdersByUserStream(String userId) => _orders
+      .where('userId', isEqualTo: userId)
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) => doc.data()).toList());
 
-  static Future<void> updateUser(custom_user.UserModel user) async {
-    await _firestore
-        .collection(_usersCollection)
-        .doc(user.id)
-        .update(user.toJson());
-  }
+  Stream<List<om.OrderModel>> getOrdersByStoreStream(String storeId) => _orders
+      .where('storeId', isEqualTo: storeId)
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) => doc.data()).toList());
 
-  // Tiendas
-  static Future<custom_store.StoreModel> createStore(
-      custom_store.StoreModel store) async {
-    final doc = _firestore.collection(_storesCollection).doc();
-    final newStore = store.copyWith(id: doc.id);
-    await doc.set(newStore.toJson());
-    return newStore;
-  }
+  Stream<List<om.OrderModel>> getOrdersByDeliveryPersonStream(
+          String deliveryPersonId) =>
+      _orders
+          .where('deliveryPersonId', isEqualTo: deliveryPersonId)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snap) => snap.docs.map((doc) => doc.data()).toList());
 
-  static Future<custom_store.StoreModel?> getStore(String storeId) async {
-    final doc =
-        await _firestore.collection(_storesCollection).doc(storeId).get();
-    if (doc.exists) {
-      return custom_store.StoreModel.fromJson(doc.data()!);
-    }
-    return null;
-  }
+  Stream<List<om.OrderModel>> getAllOrdersStream() => _orders
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) => doc.data()).toList());
 
-  static Future<List<custom_store.StoreModel>> getAllStores() async {
-    final snapshot = await _firestore.collection(_storesCollection).get();
-    return snapshot.docs
-        .map((doc) => custom_store.StoreModel.fromJson(doc.data()))
-        .toList();
-  }
+  Stream<List<om.OrderModel>> getOrdersByStatusStream(om.OrderStatus status) =>
+      _orders
+          .where('status', isEqualTo: status.name)
+          .snapshots()
+          .map((snap) => snap.docs.map((doc) => doc.data()).toList());
 
-  static Future<List<custom_store.StoreModel>> getActiveStores() async {
-    final snapshot = await _firestore
-        .collection(_storesCollection)
-        .where('isActive', isEqualTo: true)
-        .where('isOpen', isEqualTo: true)
-        .get();
-    return snapshot.docs
-        .map((doc) => custom_store.StoreModel.fromJson(doc.data()))
-        .toList();
-  }
-
-  static Future<custom_store.StoreModel?> getStoreByOwner(
-      String ownerId) async {
-    final snapshot = await _firestore
-        .collection(_storesCollection)
-        .where('ownerId', isEqualTo: ownerId)
-        .limit(1)
-        .get();
-    if (snapshot.docs.isNotEmpty) {
-      return custom_store.StoreModel.fromJson(snapshot.docs.first.data());
-    }
-    return null;
-  }
-
-  static Future<void> updateStore(custom_store.StoreModel store) async {
-    await _firestore
-        .collection(_storesCollection)
-        .doc(store.id)
-        .update(store.toJson());
-  }
-
-  // Productos
-  static Future<void> createProduct(custom_product.ProductModel product) async {
-    await _firestore
-        .collection(_productsCollection)
-        .doc(product.id)
-        .set(product.toJson());
-  }
-
-  static Future<custom_product.ProductModel?> getProduct(
-      String productId) async {
-    final doc =
-        await _firestore.collection(_productsCollection).doc(productId).get();
-    if (doc.exists) {
-      return custom_product.ProductModel.fromJson(doc.data()!);
-    }
-    return null;
-  }
-
-  static Future<List<custom_product.ProductModel>> getProductsByStore(
-      String storeId) async {
-    final snapshot = await _firestore
-        .collection(_productsCollection)
-        .where('storeId', isEqualTo: storeId)
-        .get();
-    return snapshot.docs
-        .map((doc) => custom_product.ProductModel.fromJson(doc.data()))
-        .toList();
-  }
-
-  static Future<List<custom_product.ProductModel>> getActiveProducts() async {
-    final snapshot = await _firestore
-        .collection(_productsCollection)
-        .where('isActive', isEqualTo: true)
-        .get();
-    return snapshot.docs
-        .map((doc) => custom_product.ProductModel.fromJson(doc.data()))
-        .toList();
-  }
-
-  static Future<void> updateProduct(custom_product.ProductModel product) async {
-    await _firestore
-        .collection(_productsCollection)
-        .doc(product.id)
-        .update(product.toJson());
-  }
-
-  static Future<void> deleteProduct(String productId) async {
-    await _firestore.collection(_productsCollection).doc(productId).update({
-      'isActive': false,
-    });
-  }
-
-  // Pedidos
-  static Future<void> createOrder(custom_order.OrderModel order) async {
-    await _firestore
-        .collection(_ordersCollection)
-        .doc(order.id)
-        .set(order.toJson());
-  }
-
-  static Future<custom_order.OrderModel?> getOrder(String orderId) async {
-    final doc =
-        await _firestore.collection(_ordersCollection).doc(orderId).get();
-    if (doc.exists) {
-      return custom_order.OrderModel.fromJson(doc.data()!);
-    }
-    return null;
-  }
-
-  static Future<List<custom_order.OrderModel>> getOrdersByUser(
-      String userId) async {
-    final snapshot = await _firestore
-        .collection(_ordersCollection)
-        .where('customerId', isEqualTo: userId)
-        .orderBy('orderDate', descending: true)
-        .get();
-    return snapshot.docs
-        .map((doc) => custom_order.OrderModel.fromJson(doc.data()))
-        .toList();
-  }
-
-  static Future<List<custom_order.OrderModel>> getOrdersByStore(
-      String storeId) async {
-    final snapshot = await _firestore
-        .collection(_ordersCollection)
-        .where('storeId', isEqualTo: storeId)
-        .orderBy('orderDate', descending: true)
-        .get();
-    return snapshot.docs
-        .map((doc) => custom_order.OrderModel.fromJson(doc.data()))
-        .toList();
-  }
-
-  static Future<List<custom_order.OrderModel>> getPendingOrders() async {
-    final snapshot = await _firestore
-        .collection(_ordersCollection)
-        .where('status',
-            isEqualTo: custom_order.OrderStatus.pendientePago.index)
-        .get();
-    return snapshot.docs
-        .map((doc) => custom_order.OrderModel.fromJson(doc.data()))
-        .toList();
-  }
-
-  static Future<List<custom_order.OrderModel>> getInProcessOrders() async {
-    final snapshot = await _firestore
-        .collection(_ordersCollection)
-        .where('status', isEqualTo: custom_order.OrderStatus.enProceso.index)
-        .get();
-    return snapshot.docs
-        .map((doc) => custom_order.OrderModel.fromJson(doc.data()))
-        .toList();
-  }
-
-  static Future<List<custom_order.OrderModel>> getOrdersByDeliveryPerson(
-      String deliveryPersonId) async {
-    final snapshot = await _firestore
-        .collection(_ordersCollection)
-        .where('deliveryPersonId', isEqualTo: deliveryPersonId)
-        .orderBy('orderDate', descending: true)
-        .get();
-    return snapshot.docs
-        .map((doc) => custom_order.OrderModel.fromJson(doc.data()))
-        .toList();
-  }
-
-  // Método agregado para obtener todos los pedidos (para admin)
-  static Future<List<custom_order.OrderModel>> getAllOrders() async {
-    final snapshot = await _firestore
-        .collection(_ordersCollection)
-        .orderBy('orderDate', descending: true)
-        .get();
-    return snapshot.docs
-        .map((doc) => custom_order.OrderModel.fromJson(doc.data()))
-        .toList();
-  }
-
-  static Future<void> updateOrderStatus(
-      String orderId, custom_order.OrderStatus status) async {
-    await _firestore.collection(_ordersCollection).doc(orderId).update({
-      'status': status.index,
-    });
-  }
-
-  static Future<void> assignDeliveryPerson(String orderId,
-      String deliveryPersonId, String deliveryPersonName) async {
-    await _firestore.collection(_ordersCollection).doc(orderId).update({
-      'deliveryPersonId': deliveryPersonId,
-      'deliveryPersonName': deliveryPersonName,
-    });
-  }
+  Future<void> updateOrderStatus(String orderId, om.OrderStatus newStatus) =>
+      _orders.doc(orderId).update({'status': newStatus.name});
 }

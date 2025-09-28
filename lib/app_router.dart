@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:urban_market/models/product_model.dart';
-import 'package:urban_market/models/store_model.dart';
+// Se usan alias en todas las importaciones de modelos para consistencia.
+import 'package:urban_market/models/product_model.dart' as pm;
+import 'package:urban_market/models/store_model.dart' as sm;
 import 'package:urban_market/screens/admin/admin_home_screen.dart';
 import 'package:urban_market/screens/admin/manage_orders_screen.dart';
 import 'package:urban_market/screens/admin/manage_stores_screen.dart';
@@ -12,6 +13,7 @@ import 'package:urban_market/screens/customer/store_products_screen.dart';
 import 'package:urban_market/screens/customer/stores_screen.dart';
 import 'package:urban_market/screens/delivery/delivery_home_screen.dart';
 import 'package:urban_market/screens/login_screen.dart';
+import 'package:urban_market/screens/seller/add_edit_product_screen.dart';
 import 'package:urban_market/screens/seller/orders_screen.dart';
 import 'package:urban_market/screens/seller/products_screen.dart';
 import 'package:urban_market/screens/seller/seller_home_screen.dart';
@@ -19,45 +21,45 @@ import 'package:urban_market/screens/seller/seller_home_screen.dart';
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      // Rutas Admin
-      case '/admin':
+      // Se usan routeName estáticos para evitar errores de tipeo.
+      case AdminHomeScreen.routeName:
         return MaterialPageRoute(builder: (_) => const AdminHomeScreen());
-      case '/admin-manage-stores':
+      case ManageStoresScreen.routeName:
         return MaterialPageRoute(builder: (_) => const ManageStoresScreen());
-      case '/admin-manage-users':
+      case ManageUsersScreen.routeName:
         return MaterialPageRoute(builder: (_) => const ManageUsersScreen());
-      case '/admin-manage-orders':
+      case ManageOrdersScreen.routeName:
         return MaterialPageRoute(builder: (_) => const ManageOrdersScreen());
 
-      // Rutas Customer
-      case '/customer':
+      case CustomerHomeScreen.routeName:
         return MaterialPageRoute(builder: (_) => const CustomerHomeScreen());
-      case '/cart':
+      case CartScreen.routeName:
         return MaterialPageRoute(builder: (_) => const CartScreen());
-      case '/stores':
+      case StoresScreen.routeName:
         return MaterialPageRoute(builder: (_) => const StoresScreen());
-      case '/store-products':
-        final store = settings.arguments as StoreModel;
+      case StoreProductsScreen.routeName:
+        final store = settings.arguments as sm.StoreModel;
         return MaterialPageRoute(
             builder: (_) => StoreProductsScreen(store: store));
-      case '/product-detail':
-        final product = settings.arguments as ProductModel;
+      case ProductDetailScreen.routeName:
+        final product = settings.arguments as pm.ProductModel;
         return MaterialPageRoute(
             builder: (_) => ProductDetailScreen(product: product));
 
-      // Rutas Seller
-      case '/seller':
+      case SellerHomeScreen.routeName:
         return MaterialPageRoute(builder: (_) => const SellerHomeScreen());
-      case '/products':
+      case ProductsScreen.routeName:
         return MaterialPageRoute(builder: (_) => const ProductsScreen());
-      case '/orders':
+      case OrdersScreen.routeName:
         return MaterialPageRoute(builder: (_) => const OrdersScreen());
+      case AddEditProductScreen.routeName:
+        final product = settings.arguments as pm.ProductModel?;
+        return MaterialPageRoute(
+            builder: (_) => AddEditProductScreen(product: product));
 
-      // Ruta Delivery
-      case '/delivery':
+      case DeliveryHomeScreen.routeName:
         return MaterialPageRoute(builder: (_) => const DeliveryHomeScreen());
 
-      // Ruta por defecto
       default:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
     }

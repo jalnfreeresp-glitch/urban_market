@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:urban_market/models/order_model.dart';
-import 'package:urban_market/models/store_model.dart';
+// Se añaden alias para consistencia
+import 'package:urban_market/models/order_model.dart' as om;
+import 'package:urban_market/models/store_model.dart' as sm;
 import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/providers/cart_provider.dart';
 import 'package:urban_market/providers/order_provider.dart';
@@ -12,7 +13,8 @@ class CartScreen extends StatelessWidget {
   static const routeName = '/cart';
   const CartScreen({super.key});
 
-  void _showPaymentDialog(BuildContext context, StoreModel store) {
+  // Se usa el alias 'sm' para el tipo de 'store'.
+  void _showPaymentDialog(BuildContext context, sm.StoreModel store) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -21,9 +23,9 @@ class CartScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildPaymentDetailRow('Teléfono:', store.paymentPhoneNumber),
-            _buildPaymentDetailRow('Banco:', store.paymentBankName),
-            _buildPaymentDetailRow('Cédula:', store.paymentNationalId),
+            _buildPaymentDetailRow(ctx, 'Teléfono:', store.paymentPhoneNumber),
+            _buildPaymentDetailRow(ctx, 'Banco:', store.paymentBankName),
+            _buildPaymentDetailRow(ctx, 'Cédula:', store.paymentNationalId),
           ],
         ),
         actions: [
@@ -45,7 +47,8 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentDetailRow(String label, String value) {
+  Widget _buildPaymentDetailRow(
+      BuildContext context, String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -57,6 +60,12 @@ class CartScreen extends StatelessWidget {
               icon: const Icon(Icons.copy, size: 16),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: value));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Copiado al portapapeles'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
               },
             ),
           ],
@@ -65,7 +74,8 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  void _showReferenceDialog(BuildContext context, StoreModel store) {
+  // Se usa el alias 'sm' para el tipo de 'store'.
+  void _showReferenceDialog(BuildContext context, sm.StoreModel store) {
     final referenceController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
@@ -102,27 +112,26 @@ class CartScreen extends StatelessWidget {
                 final orderProvider =
                     Provider.of<OrderProvider>(context, listen: false);
 
-                final newOrder = OrderModel(
+                // Se resuelve el TODO de la tarifa de envío con un valor fijo.
+                const deliveryFee = 5.00;
+                final total = cart.totalAmount + deliveryFee;
+
+                // Se utiliza el constructor de OrderModel con los nombres de campo correctos.
+                final newOrder = om.OrderModel(
                   id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  customerId: auth.user!.id,
-                  customerName: auth.user!.name,
-                  customerPhone: auth.user!.phone,
-                  customerAddress: auth.user!.address ?? '',
+                  userId: auth.user!.id,
+                  userName: auth.user!.name,
+                  userPhone: auth.user!.phone,
+                  deliveryAddress: auth.user!.address ?? 'No especificada',
                   storeId: store.id,
                   storeName: store.name,
-                  items: cart.items.values
-                      .map((cartItem) => OrderItemModel(
-                            productId: cartItem.product.id,
-                            productName: cartItem.product.name,
-                            price: cartItem.product.price,
-                            quantity: cartItem.quantity,
-                            storeId: cartItem.product.storeId,
-                          ))
-                      .toList(),
-                  totalAmount: cart.totalAmount,
-                  orderDate: DateTime.now(),
-                  status: OrderStatus.pendientePago,
-                  paymentReference: referenceController.text,
+                  items: cart.items.values.toList(),
+                  subtotal: cart.totalAmount,
+                  deliveryFee: deliveryFee,
+                  total: total,
+                  status: om.OrderStatus.pending,
+                  createdAt: DateTime.now(),
+                  paymentTransactionId: referenceController.text,
                 );
 
                 orderProvider.createOrder(newOrder);
@@ -131,6 +140,7 @@ class CartScreen extends StatelessWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Pedido realizado con éxito!'),
+                    backgroundColor: Colors.green,
                   ),
                 );
               }
@@ -143,26 +153,22 @@ class CartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos un Consumer para que la pantalla se redibuje si el carrito cambia.
+    final firestoreService = FirestoreService();
     return Consumer<CartProvider>(
       builder: (context, cart, child) {
         return Scaffold(
           appBar: AppBar(
             title: const Text('Mi Carrito'),
-            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           ),
           body: cart.items.isEmpty
-              // Si el carrito está vacío, muestra un mensaje.
               ? const Center(
                   child: Text(
                     'Tu carrito está vacío.',
                     style: TextStyle(fontSize: 20, color: Colors.grey),
                   ),
                 )
-              // Si no, muestra la lista de productos y el total.
               : Column(
                   children: [
-                    // La lista de productos ocupará el espacio disponible.
                     Expanded(
                       child: ListView.builder(
                         itemCount: cart.items.length,
@@ -176,7 +182,6 @@ class CartScreen extends StatelessWidget {
                             title: Text(product.name),
                             subtitle: Text(
                                 'S/. ${product.price.toStringAsFixed(2)} x ${cartItem.quantity}'),
-                            // Botón para eliminar el producto.
                             trailing: IconButton(
                               icon: const Icon(Icons.remove_shopping_cart,
                                   color: Colors.red),
@@ -188,7 +193,6 @@ class CartScreen extends StatelessWidget {
                         },
                       ),
                     ),
-                    // Tarjeta con el resumen del total.
                     Card(
                       margin: const EdgeInsets.all(15),
                       child: Padding(
@@ -196,11 +200,9 @@ class CartScreen extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Total',
-                              style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.bold),
-                            ),
+                            const Text('Total',
+                                style: TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.bold)),
                             Chip(
                               label: Text(
                                 'S/. ${cart.totalAmount.toStringAsFixed(2)}',
@@ -216,7 +218,6 @@ class CartScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Botón de Pagar.
                     Padding(
                       padding: const EdgeInsets.fromLTRB(15, 0, 15, 15),
                       child: SizedBox(
@@ -224,8 +225,9 @@ class CartScreen extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: () async {
                             if (cart.storeId != null) {
-                              final store = await FirestoreService.getStore(
-                                  cart.storeId!);
+                              // Se llama al método getStore que ahora sí existe.
+                              final store = await firestoreService
+                                  .getStore(cart.storeId!);
                               if (store != null) {
                                 if (!context.mounted) return;
                                 _showPaymentDialog(context, store);
@@ -236,10 +238,9 @@ class CartScreen extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             backgroundColor: Colors.green,
                           ),
-                          child: const Text(
-                            'PAGAR',
-                            style: TextStyle(fontSize: 20, color: Colors.white),
-                          ),
+                          child: const Text('PAGAR',
+                              style:
+                                  TextStyle(fontSize: 20, color: Colors.white)),
                         ),
                       ),
                     ),

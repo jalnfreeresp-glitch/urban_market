@@ -83,7 +83,7 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Cliente: ${order.customerName}',
+                        'Cliente: ${order.userName}',
                         style: const TextStyle(fontSize: 14),
                       ),
                       Text(
@@ -91,12 +91,12 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
                         style: const TextStyle(fontSize: 14),
                       ),
                       Text(
-                        'Dirección: ${order.customerAddress}',
+                        'Dirección: ${order.deliveryAddress}',
                         style: const TextStyle(fontSize: 14),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Total: S/. ${order.totalAmount.toStringAsFixed(2)}',
+                        'Total: S/. ${order.total.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -110,10 +110,10 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
                       ...order.items
                           .map((item) => ListTile(
                                 leading: const Icon(Icons.shopping_basket),
-                                title: Text(item.productName),
+                                title: Text(item.product.name),
                                 subtitle: Text('Cantidad: ${item.quantity}'),
                                 trailing: Text(
-                                    'S/. ${(item.price * item.quantity).toStringAsFixed(2)}'),
+                                    'S/. ${(item.product.price * item.quantity).toStringAsFixed(2)}'),
                               )),
                       const SizedBox(height: 16),
                       Row(
@@ -123,7 +123,7 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
                               onPressed: () {
                                 // Aceptar el pedido
                                 orderProvider.updateOrderStatus(
-                                    order.id, OrderStatus.enCamino);
+                                    order.id, OrderStatus.outForDelivery);
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
@@ -138,7 +138,7 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
                               onPressed: () {
                                 // Rechazar el pedido
                                 orderProvider.updateOrderStatus(
-                                    order.id, OrderStatus.cancelado);
+                                    order.id, OrderStatus.cancelled);
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
@@ -162,31 +162,35 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
 
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
-      case OrderStatus.pendientePago:
+      case OrderStatus.pending:
         return Colors.orange;
-      case OrderStatus.enProceso:
+      case OrderStatus.inProgress:
         return Colors.blue;
-      case OrderStatus.enCamino:
+      case OrderStatus.outForDelivery:
         return Colors.teal;
-      case OrderStatus.entregado:
+      case OrderStatus.delivered:
         return Colors.green;
-      case OrderStatus.cancelado:
+      case OrderStatus.cancelled:
         return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 
   String _getStatusText(OrderStatus status) {
     switch (status) {
-      case OrderStatus.pendientePago:
+      case OrderStatus.pending:
         return 'Pendiente de Pago';
-      case OrderStatus.enProceso:
+      case OrderStatus.inProgress:
         return 'En Proceso';
-      case OrderStatus.enCamino:
+      case OrderStatus.outForDelivery:
         return 'En Camino';
-      case OrderStatus.entregado:
+      case OrderStatus.delivered:
         return 'Entregado';
-      case OrderStatus.cancelado:
+      case OrderStatus.cancelled:
         return 'Cancelado';
+      default:
+        return 'Desconocido';
     }
   }
 }

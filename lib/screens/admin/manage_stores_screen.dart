@@ -15,7 +15,9 @@ class ManageStoresScreen extends StatefulWidget {
 }
 
 class _ManageStoresScreenState extends State<ManageStoresScreen> {
-  void _showStoreDialog({StoreModel? store}) async {
+  final FirestoreService _firestoreService = FirestoreService();
+
+  void _showStoreDialog({StoreModel? store}) {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: store?.name);
     final descriptionController =
@@ -34,10 +36,6 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
     final paymentNationalIdController =
         TextEditingController(text: store?.paymentNationalId);
     String? selectedOwnerId = store?.ownerId;
-
-    final sellers = await FirestoreService.getSellers();
-
-    if (!mounted) return;
 
     showDialog(
       context: context,
@@ -115,23 +113,32 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                     validator: (value) =>
                         value!.isEmpty ? 'Campo requerido' : null,
                   ),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedOwnerId,
-                    decoration:
-                        const InputDecoration(labelText: 'Dueño de la tienda'),
-                    items: sellers.map((user_model.UserModel seller) {
-                      return DropdownMenuItem<String>(
-                        value: seller.id,
-                        child: Text(seller.name),
+                  StreamBuilder<List<user_model.UserModel>>(
+                    stream: _firestoreService.getSellersStream(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const CircularProgressIndicator();
+                      }
+                      final sellers = snapshot.data!;
+                      return DropdownButtonFormField<String>(
+                        initialValue: selectedOwnerId,
+                        decoration: const InputDecoration(
+                            labelText: 'Dueño de la tienda'),
+                        items: sellers.map((user_model.UserModel seller) {
+                          return DropdownMenuItem<String>(
+                            value: seller.id,
+                            child: Text(seller.name),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedOwnerId = value;
+                          });
+                        },
+                        validator: (value) =>
+                            value == null ? 'Campo requerido' : null,
                       );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedOwnerId = value;
-                      });
                     },
-                    validator: (value) =>
-                        value == null ? 'Campo requerido' : null,
                   ),
                 ],
               ),
@@ -166,9 +173,9 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                   );
 
                   if (store == null) {
-                    await FirestoreService.createStore(newStore);
+                    await _firestoreService.createStore(newStore);
                   } else {
-                    await FirestoreService.updateStore(newStore);
+                    await _firestoreService.updateStore(newStore);
                   }
 
                   if (!context.mounted) return;
@@ -195,8 +202,8 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
         foregroundColor: Colors.white,
       ),
       drawer: _buildDrawer(context, authProvider),
-      body: FutureBuilder<List<StoreModel>>(
-        future: FirestoreService.getAllStores(),
+      body: StreamBuilder<List<StoreModel>>(
+        stream: _firestoreService.getStoresStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -249,7 +256,8 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                                 ),
                         ),
                         title: Text(store.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text('${store.category} - ${store.address}',
                             maxLines: 2, overflow: TextOverflow.ellipsis),
                         trailing: Row(
@@ -276,8 +284,8 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                                   final updatedStore = store.copyWith(
                                     isActive: !store.isActive,
                                   );
-                                  await FirestoreService.updateStore(
-                                      updatedStore);
+                                  await _firestoreService
+                                      .updateStore(updatedStore);
                                   setState(() {});
                                 },
                               ),

@@ -25,12 +25,12 @@ class StoreModel {
     required this.imageUrl,
     required this.address,
     required this.phone,
-    required this.rating,
-    required this.totalReviews,
+    this.rating = 0.0,
+    this.totalReviews = 0,
     required this.ownerId,
     this.isActive = true,
     this.isOpen = false,
-    this.category = '',
+    this.category = 'General',
     this.openingTime = '09:00',
     this.closingTime = '21:00',
     required this.paymentPhoneNumber,
@@ -38,31 +38,32 @@ class StoreModel {
     required this.paymentNationalId,
   });
 
-  factory StoreModel.fromJson(Map<String, dynamic> json) {
+  // Constructor factory para crear una instancia desde un mapa (Firestore)
+  factory StoreModel.fromMap(String id, Map<String, dynamic> data) {
     return StoreModel(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      imageUrl: json['imageUrl'] ?? '',
-      address: json['address'] ?? '',
-      phone: json['phone'] ?? '',
-      rating: (json['rating'] ?? 0).toDouble(),
-      totalReviews: json['totalReviews'] ?? 0,
-      ownerId: json['ownerId'] ?? '',
-      isActive: json['isActive'] ?? true,
-      isOpen: json['isOpen'] ?? false,
-      category: json['category'] ?? '',
-      openingTime: json['openingTime'] ?? '09:00',
-      closingTime: json['closingTime'] ?? '21:00',
-      paymentPhoneNumber: json['paymentPhoneNumber'] ?? '',
-      paymentBankName: json['paymentBankName'] ?? '',
-      paymentNationalId: json['paymentNationalId'] ?? '',
+      id: id,
+      name: data['name'] ?? '',
+      description: data['description'] ?? '',
+      imageUrl: data['imageUrl'] ?? '',
+      address: data['address'] ?? '',
+      phone: data['phone'] ?? '',
+      rating: (data['rating'] ?? 0.0).toDouble(),
+      totalReviews: data['totalReviews'] ?? 0,
+      ownerId: data['ownerId'] ?? '',
+      isActive: data['isActive'] ?? true,
+      isOpen: data['isOpen'] ?? false,
+      category: data['category'] ?? 'General',
+      openingTime: data['openingTime'] ?? '09:00',
+      closingTime: data['closingTime'] ?? '21:00',
+      paymentPhoneNumber: data['paymentPhoneNumber'] ?? '',
+      paymentBankName: data['paymentBankName'] ?? '',
+      paymentNationalId: data['paymentNationalId'] ?? '',
     );
   }
 
-  Map<String, dynamic> toJson() {
+  // Método para convertir la instancia a un mapa (para guardar en Firestore)
+  Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
       'description': description,
       'imageUrl': imageUrl,
@@ -82,6 +83,7 @@ class StoreModel {
     };
   }
 
+  // Método copyWith para facilitar la creación de copias con campos modificados
   StoreModel copyWith({
     String? id,
     String? name,

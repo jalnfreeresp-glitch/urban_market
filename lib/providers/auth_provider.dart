@@ -1,17 +1,18 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/foundation.dart';
-import 'package:urban_market/models/user_model.dart';
+// Se añade alias para consistencia
+import 'package:urban_market/models/user_model.dart' as um;
 import 'package:urban_market/services/firestore_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final fb_auth.FirebaseAuth _firebaseAuth = fb_auth.FirebaseAuth.instance;
+  final FirestoreService _firestoreService = FirestoreService();
 
-  UserModel? _user;
+  um.UserModel? _user;
   bool _isLoading = true;
 
-  // --- Getters Públicos para la UI ---
-
-  UserModel? get user => _user;
+  // --- Getters ---
+  um.UserModel? get user => _user;
   bool get isLoading => _isLoading;
   bool get isAuth => _user != null;
 
@@ -23,28 +24,33 @@ class AuthProvider with ChangeNotifier {
     if (firebaseUser == null) {
       _user = null;
     } else {
-      _user = await FirestoreService.getUser(firebaseUser.uid);
+      // Se obtiene el usuario de Firestore
+      _user = await _firestoreService.getUser(firebaseUser.uid);
     }
     _isLoading = false;
     notifyListeners();
   }
 
-  // --- Métodos de Autenticación ---
-
-  Future<void> login(String email, String password) async {
+  // --- Métodos ---
+  Future<String?> login(String email, String password) async {
     try {
       await _firebaseAuth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-    } catch (error) {
-      debugPrint('Login error: $error');
-      rethrow;
+          email: email, password: password);
+      return null; // Éxito
+    } on fb_auth.FirebaseAuthException catch (e) {
+      debugPrint('Login error: ${e.message}');
+      return e.message; // Devuelve el mensaje de error para la UI
     }
   }
 
-  Future<void> signup(String email, String password, String name, String phone,
-      String role, String address) async {
+  Future<String?> signup({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+    String role = 'Cliente', // Rol por defecto
+    String? address,
+  }) async {
     try {
       final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
@@ -52,22 +58,22 @@ class AuthProvider with ChangeNotifier {
       );
 
       final firebaseUser = userCredential.user;
-
       if (firebaseUser != null) {
-        final newUser = UserModel(
+        final newUser = um.UserModel(
           id: firebaseUser.uid,
           name: name,
           email: email,
           phone: phone,
           role: role,
-          address: address, // Campo añadido
+          address: address,
           createdAt: DateTime.now(),
         );
-        await FirestoreService.createUser(newUser);
+        await _firestoreService.createUser(newUser);
       }
-    } catch (error) {
-      debugPrint('Signup error: $error');
-      rethrow;
+      return null; // Éxito
+    } on fb_auth.FirebaseAuthException catch (e) {
+      debugPrint('Signup error: ${e.message}');
+      return e.message; // Devuelve el mensaje de error para la UI
     }
   }
 

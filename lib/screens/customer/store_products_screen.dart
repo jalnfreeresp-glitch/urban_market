@@ -20,8 +20,10 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
   @override
   void initState() {
     // Cargar productos de la tienda específica
-    Provider.of<ProductProvider>(context, listen: false)
-        .filterProductsByStore(widget.store.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ProductProvider>(context, listen: false)
+          .filterProductsByStore(widget.store.id);
+    });
     super.initState();
   }
 
@@ -99,7 +101,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                   final finalQuantity =
                       int.tryParse(quantityController.text) ?? 1;
                   if (finalQuantity > 0 && finalQuantity <= product.stock) {
-                    cartProvider.addItem(product, finalQuantity);
+                    cartProvider.addItem(product);
                     Navigator.of(ctx).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -143,7 +145,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
       ),
       body: Consumer<ProductProvider>(
         builder: (ctx, productProvider, child) {
-          final products = productProvider.getProductsByStore(widget.store.id);
+          final products = productProvider.filteredProducts;
 
           if (products.isEmpty) {
             return const Center(

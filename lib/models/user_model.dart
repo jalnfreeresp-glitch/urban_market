@@ -1,6 +1,8 @@
-// lib/models/user_model.dart (actualizado)
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Modelo para representar a un usuario en la aplicación.
+/// Contiene toda la información relevante del usuario y métodos
+/// para convertir los datos desde y hacia el formato de Firestore.
 class UserModel {
   final String id;
   final String name;
@@ -8,7 +10,7 @@ class UserModel {
   final String phone;
   final String role; // 'Administrador', 'Vendedor', 'Cliente', 'Repartidor'
   final String? address;
-  final String? storeId; // Agregado para vincular un vendedor a una tienda
+  final String? storeId; // Vincula un vendedor a una tienda
   final DateTime createdAt;
   final bool isActive;
 
@@ -24,36 +26,38 @@ class UserModel {
     this.isActive = true,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
+  /// Factory constructor para crear una instancia de UserModel desde un documento de Firestore.
+  /// El 'id' del documento se pasa por separado del mapa de datos.
+  factory UserModel.fromMap(String id, Map<String, dynamic> data) {
     return UserModel(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'] ?? '',
-      role: json['role'] ?? 'Cliente',
-      address: json['address'],
-      storeId: json['storeId'],
-      createdAt: (json['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      isActive: json['isActive'] ?? true,
+      id: id,
+      name: data['name'] ?? '',
+      email: data['email'] ?? '',
+      phone: data['phone'] ?? '',
+      role: data['role'] ?? 'Cliente',
+      address: data['address'],
+      storeId: data['storeId'],
+      // Firestore devuelve un Timestamp, hay que convertirlo a DateTime.
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isActive: data['isActive'] ?? true,
     );
   }
 
-  Map<String, dynamic> toJson() {
+  /// Convierte la instancia de UserModel a un mapa de datos para guardarlo en Firestore.
+  /// El 'id' no se incluye aquí porque es el identificador del documento.
+  Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
       'email': email,
       'phone': phone,
       'role': role,
       'address': address,
       'storeId': storeId,
-      'createdAt':
-          Timestamp.fromDate(createdAt), // Convertir a Timestamp para Firestore
+      'createdAt': Timestamp.fromDate(createdAt), // Se convierte a Timestamp.
       'isActive': isActive,
     };
   }
 
-  // Método copyWith para crear copias con campos modificados
   UserModel copyWith({
     String? id,
     String? name,

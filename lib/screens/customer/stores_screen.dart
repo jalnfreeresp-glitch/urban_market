@@ -12,12 +12,13 @@ class StoresScreen extends StatefulWidget {
 }
 
 class _StoresScreenState extends State<StoresScreen> {
-  late Future<List<StoreModel>> _storesFuture;
+  final FirestoreService _firestoreService = FirestoreService();
+  late Stream<List<StoreModel>> _storesStream;
 
   @override
   void initState() {
     super.initState();
-    _storesFuture = FirestoreService.getActiveStores();
+    _storesStream = _firestoreService.getActiveStoresStream();
   }
 
   @override
@@ -28,8 +29,8 @@ class _StoresScreenState extends State<StoresScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
-      body: FutureBuilder<List<StoreModel>>(
-        future: _storesFuture,
+      body: StreamBuilder<List<StoreModel>>(
+        stream: _storesStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

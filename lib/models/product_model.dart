@@ -1,3 +1,5 @@
+/// Modelo para representar un producto.
+/// Cada producto está asociado a una tienda (storeId).
 class ProductModel {
   final String id;
   final String name;
@@ -23,24 +25,26 @@ class ProductModel {
     this.isActive = true,
   });
 
-  factory ProductModel.fromJson(Map<String, dynamic> json) {
+  /// Factory constructor para crear una instancia de ProductModel desde un documento de Firestore.
+  factory ProductModel.fromMap(String id, Map<String, dynamic> data) {
     return ProductModel(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      price: (json['price'] ?? 0).toDouble(),
-      imageUrl: json['imageUrl'] ?? '',
-      storeId: json['storeId'] ?? '',
-      storeName: json['storeName'] ?? '',
-      stock: json['stock'] ?? 0,
-      categories: List<String>.from(json['categories'] ?? []),
-      isActive: json['isActive'] ?? true,
+      id: id,
+      name: data['name'] ?? '',
+      description: data['description'] ?? '',
+      price: (data['price'] ?? 0.0).toDouble(),
+      imageUrl: data['imageUrl'] ?? '',
+      storeId: data['storeId'] ?? '',
+      storeName: data['storeName'] ?? '',
+      stock: data['stock'] ?? 0,
+      // Se convierte la lista dinámica de Firestore a una List<String>.
+      categories: List<String>.from(data['categories'] ?? []),
+      isActive: data['isActive'] ?? true,
     );
   }
 
-  Map<String, dynamic> toJson() {
+  /// Convierte la instancia de ProductModel a un mapa para guardarlo en Firestore.
+  Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
       'description': description,
       'price': price,
@@ -53,7 +57,7 @@ class ProductModel {
     };
   }
 
-  // Método copyWith para crear copias con campos modificados
+  /// Crea una copia de la instancia actual con los campos proporcionados modificados.
   ProductModel copyWith({
     String? id,
     String? name,

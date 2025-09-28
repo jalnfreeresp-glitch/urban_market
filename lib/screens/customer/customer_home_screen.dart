@@ -1,7 +1,7 @@
-// lib/screens/customer/customer_home_screen.dart (actualizado)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:urban_market/models/store_model.dart';
+// Se añade el alias 'sm' para consistencia.
+import 'package:urban_market/models/store_model.dart' as sm;
 import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/services/firestore_service.dart';
 
@@ -12,13 +12,9 @@ class CustomerHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Urban Market'),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.shopping_cart),
@@ -28,39 +24,30 @@ class CustomerHomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      drawer: _buildDrawer(context, authProvider),
+      drawer: _buildDrawer(context),
       body: _buildBody(context),
     );
   }
 
-  Widget _buildDrawer(BuildContext context, AuthProvider authProvider) {
+  Widget _buildDrawer(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           const DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.deepPurple,
-            ),
+            decoration: BoxDecoration(color: Colors.deepPurple),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text(
-                  'Urban Market',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'Cliente',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
+                Text('Urban Market',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold)),
+                Text('Cliente',
+                    style: TextStyle(color: Colors.white70, fontSize: 14)),
               ],
             ),
           ),
@@ -68,28 +55,25 @@ class CustomerHomeScreen extends StatelessWidget {
             leading: const Icon(Icons.store),
             title: const Text('Tiendas'),
             onTap: () {
-              Navigator.pushReplacementNamed(context, '/stores');
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/stores');
             },
           ),
           ListTile(
             leading: const Icon(Icons.shopping_cart),
             title: const Text('Mi Carrito'),
             onTap: () {
-              Navigator.pushReplacementNamed(context, '/cart');
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/cart');
             },
           ),
           ListTile(
             leading: const Icon(Icons.history),
             title: const Text('Mis Pedidos'),
             onTap: () {
-              Navigator.pushReplacementNamed(context, '/orders');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.account_circle),
-            title: const Text('Mi Perfil'),
-            onTap: () {
               Navigator.pop(context);
+              // Asumiendo que hay una pantalla de órdenes para el cliente
+              Navigator.pushNamed(context, '/orders');
             },
           ),
           const Divider(),
@@ -98,7 +82,8 @@ class CustomerHomeScreen extends StatelessWidget {
             title: const Text('Cerrar Sesión'),
             onTap: () {
               authProvider.logout();
-              Navigator.pushReplacementNamed(context, '/');
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/', (Route<dynamic> route) => false);
             },
           ),
         ],
@@ -107,33 +92,26 @@ class CustomerHomeScreen extends StatelessWidget {
   }
 
   Widget _buildBody(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Bienvenido',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Encuentra las mejores tiendas cerca de ti',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 30),
-          _buildSearchBar(),
-          const SizedBox(height: 20),
-          _buildCategories(),
-          const SizedBox(height: 20),
-          _buildFeaturedStores(context),
-        ],
+    // Se envuelve en SingleChildScrollView para evitar desbordamientos.
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Bienvenido',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Encuentra las mejores tiendas cerca de ti',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+            const SizedBox(height: 30),
+            _buildSearchBar(),
+            const SizedBox(height: 20),
+            _buildCategories(),
+            const SizedBox(height: 20),
+            _buildFeaturedStores(context),
+          ],
+        ),
       ),
     );
   }
@@ -144,10 +122,10 @@ class CustomerHomeScreen extends StatelessWidget {
         hintText: 'Buscar tiendas o productos...',
         prefixIcon: const Icon(Icons.search),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none),
         filled: true,
-        fillColor: Colors.grey[100],
+        fillColor: Colors.grey[200],
       ),
     );
   }
@@ -156,16 +134,11 @@ class CustomerHomeScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Categorías',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        const Text('Categorías',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         SizedBox(
-          height: 60,
+          height: 80, // Aumentamos un poco la altura para que se vea mejor
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
@@ -183,65 +156,70 @@ class CustomerHomeScreen extends StatelessWidget {
 
   Widget _buildCategoryItem(String title, IconData icon) {
     return Container(
+      width: 100, // Ancho fijo para cada item
       margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          onTap: () {}, // TODO: Implementar filtro por categoría
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.deepPurple),
+              const SizedBox(height: 4),
+              Text(title,
+                  style: const TextStyle(fontSize: 12),
+                  textAlign: TextAlign.center),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.deepPurple),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 12),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildFeaturedStores(BuildContext context) {
-    return FutureBuilder<List<StoreModel>>(
-      future: FirestoreService.getAllStores(),
+    final firestoreService = FirestoreService();
+    // Se usa el alias 'sm' y se corrige el nombre del método a 'getActiveStoresStream'.
+    return StreamBuilder<List<sm.StoreModel>>(
+      stream: firestoreService.getActiveStoresStream(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final stores = snapshot.data ?? [];
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No hay tiendas disponibles.'));
+        }
+        final stores = snapshot.data!;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Tiendas Destacadas',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            const Text('Tiendas Destacadas',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            ...stores.take(5).map((store) => _buildStoreCard(store, context)),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount:
+                  stores.length > 5 ? 5 : stores.length, // Muestra máximo 5
+              itemBuilder: (ctx, index) =>
+                  _buildStoreCard(stores[index], context),
+            )
           ],
         );
       },
     );
   }
 
-  Widget _buildStoreCard(StoreModel store, BuildContext context) {
+  // Se usa el alias 'sm' para el tipo de 'store'.
+  Widget _buildStoreCard(sm.StoreModel store, BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
+        borderRadius: BorderRadius.circular(12),
         onTap: () {
-          // Navegar a la pantalla de productos de la tienda
           Navigator.pushNamed(context, '/store-products', arguments: store);
         },
         child: Padding(
@@ -256,64 +234,45 @@ class CustomerHomeScreen extends StatelessWidget {
                         width: 60,
                         height: 60,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
+                        errorBuilder: (context, error, stackTrace) => Container(
                             width: 60,
                             height: 60,
                             color: Colors.grey[300],
-                            child: const Icon(Icons.store),
-                          );
-                        },
+                            child: const Icon(Icons.store)),
                       )
                     : Container(
                         width: 60,
                         height: 60,
                         color: Colors.grey[300],
-                        child: const Icon(Icons.store),
-                      ),
+                        child: const Icon(Icons.store)),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      store.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text(store.name,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text(
-                      store.category,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
+                    Text(store.category,
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.grey[600])),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                          size: 16,
-                        ),
+                        const Icon(Icons.star, color: Colors.amber, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          '${store.rating.toStringAsFixed(1)} ★ (${store.totalReviews})',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
+                            '${store.rating.toStringAsFixed(1)} ★ (${store.totalReviews})',
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey[600])),
                       ],
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, size: 16),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
           ),
         ),

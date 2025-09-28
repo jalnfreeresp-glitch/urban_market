@@ -1,167 +1,150 @@
+// lib/models/order_model.dart (Definitivo)
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:urban_market/models/cart_item_model.dart';
 
+// Enum para los estados del pedido. Es más seguro que usar Strings.
 enum OrderStatus {
-  pendientePago,
-  enProceso,
-  enCamino,
-  entregado,
-  cancelado,
+  pending,
+  confirmed,
+  inProgress,
+  outForDelivery,
+  delivered,
+  cancelled,
 }
 
 class OrderModel {
   final String id;
-  final String customerId;
-  final String customerName;
-  final String customerPhone;
-  final String customerAddress;
+  final String userId;
+  final String userName;
+  final String userPhone;
   final String storeId;
   final String storeName;
-  final List<OrderItemModel> items;
-  final double totalAmount;
-  final DateTime orderDate;
+  final List<CartItemModel> items;
+  final double subtotal;
+  final double deliveryFee;
+  final double total;
+  final String deliveryAddress;
   final OrderStatus status;
+  final DateTime createdAt;
   final String? deliveryPersonId;
   final String? deliveryPersonName;
-  final DateTime? deliveryTime;
-  final String? paymentReference;
-  final String notes;
+  final String? paymentMethod;
+  final String? paymentTransactionId;
 
   OrderModel({
     required this.id,
-    required this.customerId,
-    required this.customerName,
-    required this.customerPhone,
-    required this.customerAddress,
+    required this.userId,
+    required this.userName,
+    required this.userPhone,
     required this.storeId,
     required this.storeName,
     required this.items,
-    required this.totalAmount,
-    required this.orderDate,
-    this.status = OrderStatus.pendientePago,
+    required this.subtotal,
+    required this.deliveryFee,
+    required this.total,
+    required this.deliveryAddress,
+    required this.status,
+    required this.createdAt,
     this.deliveryPersonId,
     this.deliveryPersonName,
-    this.deliveryTime,
-    this.paymentReference,
-    this.notes = '',
+    this.paymentMethod,
+    this.paymentTransactionId,
   });
 
-  factory OrderModel.fromJson(Map<String, dynamic> json) {
+  DateTime get orderDate => createdAt;
+  String? get paymentReference => paymentTransactionId;
+  double get totalAmount => total;
+
+  // Constructor factory para crear una instancia desde un mapa (Firestore)
+  factory OrderModel.fromMap(String id, Map<String, dynamic> data) {
     return OrderModel(
-      id: json['id'] ?? '',
-      customerId: json['customerId'] ?? '',
-      customerName: json['customerName'] ?? '',
-      customerPhone: json['customerPhone'] ?? '',
-      customerAddress: json['customerAddress'] ?? '',
-      storeId: json['storeId'] ?? '',
-      storeName: json['storeName'] ?? '',
-      items: (json['items'] as List<dynamic>)
-          .map((item) => OrderItemModel.fromJson(item))
-          .toList(),
-      totalAmount: (json['totalAmount'] ?? 0).toDouble(),
-      orderDate: (json['orderDate'] as Timestamp).toDate(),
-      status: OrderStatus.values[json['status'] ?? OrderStatus.pendientePago.index],
-      deliveryPersonId: json['deliveryPersonId'],
-      deliveryPersonName: json['deliveryPersonName'],
-      deliveryTime: json['deliveryTime'] != null
-          ? (json['deliveryTime'] as Timestamp).toDate()
-          : null,
-      paymentReference: json['paymentReference'],
-      notes: json['notes'] ?? '',
+      id: id,
+      userId: data['userId'] ?? '',
+      userName: data['userName'] ?? '',
+      userPhone: data['userPhone'] ?? '',
+      storeId: data['storeId'] ?? '',
+      storeName: data['storeName'] ?? '',
+      items: (data['items'] as List<dynamic>?)
+              ?.map((itemData) =>
+                  CartItemModel.fromMap(itemData as Map<String, dynamic>))
+              .toList() ??
+          [],
+      subtotal: (data['subtotal'] ?? 0.0).toDouble(),
+      deliveryFee: (data['deliveryFee'] ?? 0.0).toDouble(),
+      total: (data['total'] ?? 0.0).toDouble(),
+      deliveryAddress: data['deliveryAddress'] ?? '',
+      status: OrderStatus.values.firstWhere(
+        (e) => e.name == data['status'],
+        orElse: () => OrderStatus.pending,
+      ),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      deliveryPersonId: data['deliveryPersonId'],
+      deliveryPersonName: data['deliveryPersonName'],
+      paymentMethod: data['paymentMethod'],
+      paymentTransactionId: data['paymentTransactionId'],
     );
   }
 
-  Map<String, dynamic> toJson() {
+  // Método para convertir la instancia a un mapa (para guardar en Firestore)
+  Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'customerId': customerId,
-      'customerName': customerName,
-      'customerPhone': customerPhone,
-      'customerAddress': customerAddress,
+      'userId': userId,
+      'userName': userName,
+      'userPhone': userPhone,
       'storeId': storeId,
       'storeName': storeName,
-      'items': items.map((item) => item.toJson()).toList(),
-      'totalAmount': totalAmount,
-      'orderDate': Timestamp.fromDate(orderDate),
-      'status': status.index,
+      'items': items.map((item) => item.toMap()).toList(),
+      'subtotal': subtotal,
+      'deliveryFee': deliveryFee,
+      'total': total,
+      'deliveryAddress': deliveryAddress,
+      'status': status.name, // Guardamos el nombre del enum como String
+      'createdAt': Timestamp.fromDate(createdAt),
       'deliveryPersonId': deliveryPersonId,
       'deliveryPersonName': deliveryPersonName,
-      'deliveryTime': deliveryTime != null ? Timestamp.fromDate(deliveryTime!) : null,
-      'paymentReference': paymentReference,
-      'notes': notes,
+      'paymentMethod': paymentMethod,
+      'paymentTransactionId': paymentTransactionId,
     };
   }
 
+  // Método copyWith para crear copias con campos modificados
   OrderModel copyWith({
     String? id,
-    String? customerId,
-    String? customerName,
-    String? customerPhone,
-    String? customerAddress,
+    String? userId,
+    String? userName,
+    String? userPhone,
     String? storeId,
     String? storeName,
-    List<OrderItemModel>? items,
-    double? totalAmount,
-    DateTime? orderDate,
+    List<CartItemModel>? items,
+    double? subtotal,
+    double? deliveryFee,
+    double? total,
+    String? deliveryAddress,
     OrderStatus? status,
+    DateTime? createdAt,
     String? deliveryPersonId,
     String? deliveryPersonName,
-    DateTime? deliveryTime,
-    String? paymentReference,
-    String? notes,
+    String? paymentMethod,
+    String? paymentTransactionId,
   }) {
     return OrderModel(
       id: id ?? this.id,
-      customerId: customerId ?? this.customerId,
-      customerName: customerName ?? this.customerName,
-      customerPhone: customerPhone ?? this.customerPhone,
-      customerAddress: customerAddress ?? this.customerAddress,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userPhone: userPhone ?? this.userPhone,
       storeId: storeId ?? this.storeId,
-      storeName: storeName ?? this.storeName,
       items: items ?? this.items,
-      totalAmount: totalAmount ?? this.totalAmount,
-      orderDate: orderDate ?? this.orderDate,
+      subtotal: subtotal ?? this.subtotal,
+      deliveryFee: deliveryFee ?? this.deliveryFee,
+      total: total ?? this.total,
+      deliveryAddress: deliveryAddress ?? this.deliveryAddress,
       status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      storeName: storeName ?? this.storeName,
       deliveryPersonId: deliveryPersonId ?? this.deliveryPersonId,
       deliveryPersonName: deliveryPersonName ?? this.deliveryPersonName,
-      deliveryTime: deliveryTime ?? this.deliveryTime,
-      paymentReference: paymentReference ?? this.paymentReference,
-      notes: notes ?? this.notes,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      paymentTransactionId: paymentTransactionId ?? this.paymentTransactionId,
     );
-  }
-}
-
-class OrderItemModel {
-  final String productId;
-  final String productName;
-  final double price;
-  final int quantity;
-  final String storeId;
-
-  OrderItemModel({
-    required this.productId,
-    required this.productName,
-    required this.price,
-    required this.quantity,
-    required this.storeId,
-  });
-
-  factory OrderItemModel.fromJson(Map<String, dynamic> json) {
-    return OrderItemModel(
-      productId: json['productId'] ?? '',
-      productName: json['productName'] ?? '',
-      price: (json['price'] ?? 0).toDouble(),
-      quantity: json['quantity'] ?? 0,
-      storeId: json['storeId'] ?? '',
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'productId': productId,
-      'productName': productName,
-      'price': price,
-      'quantity': quantity,
-      'storeId': storeId,
-    };
   }
 }

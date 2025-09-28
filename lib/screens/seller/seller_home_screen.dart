@@ -5,6 +5,8 @@ import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/services/firestore_service.dart';
 
 class SellerHomeScreen extends StatefulWidget {
+  static const routeName = '/seller';
+
   const SellerHomeScreen({super.key});
 
   @override
@@ -12,6 +14,7 @@ class SellerHomeScreen extends StatefulWidget {
 }
 
 class _SellerHomeScreenState extends State<SellerHomeScreen> {
+  final FirestoreService _firestoreService = FirestoreService();
   StoreModel? _store;
 
   @override
@@ -23,7 +26,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
   Future<void> _fetchStore() async {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
     if (user != null) {
-      final store = await FirestoreService.getStoreByOwner(user.id);
+      final store = await _firestoreService.getStoreByOwner(user.id);
       if (mounted) {
         setState(() {
           _store = store;
@@ -136,7 +139,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
                 value: _store!.isOpen,
                 onChanged: (value) async {
                   final updatedStore = _store!.copyWith(isOpen: value);
-                  await FirestoreService.updateStore(updatedStore);
+                  await _firestoreService.updateStore(updatedStore);
                   setState(() {
                     _store = updatedStore;
                   });
@@ -154,7 +157,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
   }
 
   Widget _buildStatsCard() {
-    return FutureBuilder<List<int>>(
+    return FutureBuilder<List<num>>(
       future: _fetchSellerStats(),
       builder: (context, snapshot) {
         final productos = snapshot.hasData ? snapshot.data![0].toString() : '-';
@@ -190,13 +193,17 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
     );
   }
 
-  Future<List<int>> _fetchSellerStats() async {
+  Future<List<num>> _fetchSellerStats() async {
     if (_store == null) return [0, 0, 0];
     final productos =
-        (await FirestoreService.getProductsByStore(_store!.id)).length;
-    final pedidos = (await FirestoreService.getOrdersByStore(_store!.id)).length;
-    final ventas = (await FirestoreService.getOrdersByStore(_store!.id))
-        .fold<int>(0, (sum, order) => sum + order.totalAmount.toInt());
+        (await _firestoreService.getProductsByStoreStream(_store!.id).first)
+            .length;
+    final pedidos =
+        (await _firestoreService.getOrdersByStoreStream(_store!.id).first)
+            .length;
+    final ventas =
+        (await _firestoreService.getOrdersByStoreStream(_store!.id).first)
+            .fold<double>(0, (sum, order) => sum + order.total);
     return [productos, pedidos, ventas];
   }
 

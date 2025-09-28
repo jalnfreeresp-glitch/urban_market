@@ -16,7 +16,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   void initState() {
     // Cargar productos del vendedor
-    Provider.of<ProductProvider>(context, listen: false).loadProducts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ProductProvider>(context, listen: false)
+          .listenToSellerProducts();
+    });
     super.initState();
   }
 
@@ -43,7 +46,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
       body: Consumer<ProductProvider>(
         builder: (context, productProvider, child) {
-          final products = productProvider.products;
+          final products = productProvider.sellerProducts;
 
           if (products.isEmpty) {
             return const Center(

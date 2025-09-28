@@ -83,7 +83,7 @@ class ProductDetailScreen extends StatelessWidget {
                 ),
                 onPressed: () {
                   try {
-                    cart.addItem(product, 1);
+                    cart.addItem(product);
                     ScaffoldMessenger.of(context)
                         .hideCurrentSnackBar(); // Oculta la anterior si existe
                     ScaffoldMessenger.of(context).showSnackBar(

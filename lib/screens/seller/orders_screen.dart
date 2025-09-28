@@ -70,18 +70,18 @@ class OrdersScreen extends StatelessWidget {
                           style: const TextStyle(fontSize: 14),
                         ),
                         Text(
-                          'Fecha: ${order.orderDate.toString().split('.')[0]}',
+                          'Fecha: ${order.createdAt.toString().split('.')[0]}',
                           style: const TextStyle(fontSize: 14),
                         ),
-                        if (order.paymentReference != null)
+                        if (order.paymentTransactionId != null)
                           Text(
-                            'Ref. de pago: ${order.paymentReference}',
+                            'Ref. de pago: ${order.paymentTransactionId}',
                             style: const TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                         const SizedBox(height: 8),
                         Text(
-                          'Total: S/. ${order.totalAmount.toStringAsFixed(2)}',
+                          'Total: S/. ${order.total.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -95,10 +95,10 @@ class OrdersScreen extends StatelessWidget {
                         ...order.items
                             .map((item) => ListTile(
                                   leading: const Icon(Icons.shopping_basket),
-                                  title: Text(item.productName),
+                                  title: Text(item.product.name),
                                   subtitle: Text('Cantidad: ${item.quantity}'),
                                   trailing: Text(
-                                      'S/. ${(item.price * item.quantity).toStringAsFixed(2)}'),
+                                      'S/. ${(item.product.price * item.quantity).toStringAsFixed(2)}'),
                                 )),
                         if (order.deliveryPersonName != null)
                           Padding(
@@ -111,13 +111,13 @@ class OrdersScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                        if (order.status == OrderStatus.pendientePago)
+                        if (order.status == OrderStatus.pending)
                           Padding(
                             padding: const EdgeInsets.only(top: 8.0),
                             child: ElevatedButton(
                               onPressed: () {
                                 orderProvider.updateOrderStatus(
-                                    order.id, OrderStatus.enProceso);
+                                    order.id, OrderStatus.inProgress);
                               },
                               child: const Text('Aceptar Pedido'),
                             ),
@@ -133,31 +133,35 @@ class OrdersScreen extends StatelessWidget {
 
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
-      case OrderStatus.pendientePago:
+      case OrderStatus.pending:
         return Colors.orange;
-      case OrderStatus.enProceso:
+      case OrderStatus.inProgress:
         return Colors.blue;
-      case OrderStatus.enCamino:
+      case OrderStatus.outForDelivery:
         return Colors.teal;
-      case OrderStatus.entregado:
+      case OrderStatus.delivered:
         return Colors.green;
-      case OrderStatus.cancelado:
+      case OrderStatus.cancelled:
         return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 
   String _getStatusText(OrderStatus status) {
     switch (status) {
-      case OrderStatus.pendientePago:
+      case OrderStatus.pending:
         return 'Pendiente de Pago';
-      case OrderStatus.enProceso:
+      case OrderStatus.inProgress:
         return 'En Proceso';
-      case OrderStatus.enCamino:
+      case OrderStatus.outForDelivery:
         return 'En Camino';
-      case OrderStatus.entregado:
+      case OrderStatus.delivered:
         return 'Entregado';
-      case OrderStatus.cancelado:
+      case OrderStatus.cancelled:
         return 'Cancelado';
+      default:
+        return 'Desconocido';
     }
   }
 }
