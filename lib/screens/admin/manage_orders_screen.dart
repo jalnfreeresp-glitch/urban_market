@@ -30,6 +30,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(),
         title: const Text('Gestionar Pedidos'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,

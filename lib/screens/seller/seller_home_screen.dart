@@ -94,14 +94,16 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
             leading: const Icon(Icons.shopping_basket),
             title: const Text('Mis Productos'),
             onTap: () {
-              Navigator.pushReplacementNamed(context, '/products');
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/products');
             },
           ),
           ListTile(
             leading: const Icon(Icons.list_alt),
             title: const Text('Mis Pedidos'),
             onTap: () {
-              Navigator.pushReplacementNamed(context, '/orders');
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/orders');
             },
           ),
           const Divider(),
@@ -110,7 +112,8 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
             title: const Text('Cerrar Sesión'),
             onTap: () {
               authProvider.logout();
-              Navigator.pushReplacementNamed(context, '/');
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/', (Route<dynamic> route) => false);
             },
           ),
         ],

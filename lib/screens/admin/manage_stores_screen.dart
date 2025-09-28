@@ -197,6 +197,7 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(),
         title: const Text('Gestionar Tiendas'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
@@ -344,8 +345,8 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
             leading: const Icon(Icons.store),
             title: const Text('Gestionar Tiendas'),
             onTap: () {
+              // Si ya estamos en la pantalla, solo cerramos el drawer.
               Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, '/admin-manage-stores');
             },
           ),
           ListTile(
@@ -377,7 +378,8 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
             title: const Text('Cerrar Sesión'),
             onTap: () {
               authProvider.logout();
-              Navigator.pushReplacementNamed(context, '/');
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/', (Route<dynamic> route) => false);
             },
           ),
         ],
