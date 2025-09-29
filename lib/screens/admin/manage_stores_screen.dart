@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+
 import 'package:urban_market/models/store_model.dart';
 import 'package:urban_market/models/user_model.dart' as user_model;
-import 'package:urban_market/providers/auth_provider.dart';
+
 import 'package:urban_market/services/firestore_service.dart';
+import 'package:urban_market/widgets/admin_drawer.dart';
 
 class ManageStoresScreen extends StatefulWidget {
   static const routeName = '/admin-manage-stores';
@@ -29,6 +30,7 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
         TextEditingController(text: store?.openingTime);
     final closingTimeController =
         TextEditingController(text: store?.closingTime);
+    final deliveryFeeController = TextEditingController(text: store?.deliveryFee.toString());
     final paymentPhoneNumberController =
         TextEditingController(text: store?.paymentPhoneNumber);
     final paymentBankNameController =
@@ -89,6 +91,13 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                     controller: closingTimeController,
                     decoration:
                         const InputDecoration(labelText: 'Hora de cierre'),
+                    validator: (value) =>
+                        value!.isEmpty ? 'Campo requerido' : null,
+                  ),
+                  TextFormField(
+                    controller: deliveryFeeController,
+                    decoration: const InputDecoration(labelText: 'Tarifa de envío'),
+                    keyboardType: TextInputType.number,
                     validator: (value) =>
                         value!.isEmpty ? 'Campo requerido' : null,
                   ),
@@ -161,6 +170,7 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                     category: categoryController.text,
                     openingTime: openingTimeController.text,
                     closingTime: closingTimeController.text,
+                    deliveryFee: double.parse(deliveryFeeController.text),
                     ownerId: selectedOwnerId!,
                     imageUrl: store?.imageUrl ?? '',
                     rating: store?.rating ?? 0,
@@ -193,7 +203,6 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
@@ -202,7 +211,7 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
-      drawer: _buildDrawer(context, authProvider),
+      drawer: const AdminDrawer(),
       body: StreamBuilder<List<StoreModel>>(
         stream: _firestoreService.getStoresStream(),
         builder: (context, snapshot) {
@@ -306,83 +315,6 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
         onPressed: () => _showStoreDialog(),
         backgroundColor: Colors.deepPurple,
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context, AuthProvider authProvider) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.deepPurple,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  'Urban Market',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'Administrador',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.store),
-            title: const Text('Gestionar Tiendas'),
-            onTap: () {
-              // Si ya estamos en la pantalla, solo cerramos el drawer.
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text('Gestionar Usuarios'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/admin-manage-users');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.shopping_cart),
-            title: const Text('Gestionar Pedidos'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/admin-manage-orders');
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Configuración'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Cerrar Sesión'),
-            onTap: () {
-              authProvider.logout();
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/', (Route<dynamic> route) => false);
-            },
-          ),
-        ],
       ),
     );
   }

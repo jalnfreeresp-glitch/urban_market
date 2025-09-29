@@ -1,12 +1,13 @@
+// lib/screens/admin/admin_home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:urban_market/models/user_model.dart' as um;
-import 'package:urban_market/providers/auth_provider.dart';
+
 import 'package:urban_market/providers/order_provider.dart';
 import 'package:urban_market/providers/product_provider.dart';
+import 'package:urban_market/widgets/admin_drawer.dart';
 import 'package:urban_market/services/firestore_service.dart';
 
-// 1. Se convierte en un StatefulWidget
 class AdminHomeScreen extends StatefulWidget {
   static const routeName = '/admin';
 
@@ -17,90 +18,26 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  // 2. La lógica que cambia el estado se mueve a initState
   @override
   void initState() {
     super.initState();
-    // Se usa addPostFrameCallback para asegurar que el build haya terminado
-    // antes de llamar al provider.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // La llamada al provider se hace aquí, fuera del método build.
       Provider.of<OrderProvider>(context, listen: false).listenToOrders();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // El método build ahora solo se enfoca en construir la UI.
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Administrador'),
       ),
-      drawer: _buildDrawer(context),
+      drawer: const AdminDrawer(),
       body: _buildBody(context),
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Colors.deepPurple),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text('Urban Market',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold)),
-                Text('Administrador',
-                    style: TextStyle(color: Colors.white70, fontSize: 14)),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.store),
-            title: const Text('Gestionar Tiendas'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/admin-manage-stores');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text('Gestionar Usuarios'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/admin-manage-users');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.shopping_cart),
-            title: const Text('Gestionar Pedidos'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/admin-manage-orders');
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Cerrar Sesión'),
-            onTap: () {
-              authProvider.logout();
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/', (Route<dynamic> route) => false);
-            },
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildBody(BuildContext context) {
     return SingleChildScrollView(
@@ -200,6 +137,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 Icons.shopping_cart,
                 Colors.orange,
                 () => Navigator.pushNamed(context, '/admin-manage-orders')),
+            _buildActionCard(
+                context,
+                'Panel de Control',
+                Icons.dashboard,
+                Colors.purple,
+                () => Navigator.pushNamed(context, '/admin-dashboard')),
           ],
         ),
       ],

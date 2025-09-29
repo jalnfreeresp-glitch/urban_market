@@ -1,3 +1,4 @@
+// lib/screens/admin/manage_users_screen.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:urban_market/models/store_model.dart';
 import 'package:urban_market/models/user_model.dart' as um;
 import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/services/firestore_service.dart';
+import 'package:urban_market/widgets/admin_drawer.dart';
 
 class ManageUsersScreen extends StatefulWidget {
   static const routeName = '/admin-manage-users';
@@ -18,6 +20,8 @@ class ManageUsersScreen extends StatefulWidget {
 
 class _ManageUsersScreenState extends State<ManageUsersScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  String _searchQuery = '';
+  String _selectedRoleFilter = 'Todos';
 
   void _showUserDialog({um.UserModel? user}) {
     final formKey = GlobalKey<FormState>();
@@ -263,21 +267,15 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                     openingTime: openingTimeController.text,
                     closingTime: closingTimeController.text,
                     ownerId: seller.id,
-                    imageUrl:
-                        '', // Se puede añadir un campo para la imagen más adelante
+                    imageUrl: '',
                     paymentPhoneNumber: paymentPhoneNumberController.text,
                     paymentBankName: paymentBankNameController.text,
                     paymentNationalId: paymentNationalIdController.text,
                   );
 
                   try {
-                    // Usamos una transacción para asegurar la atomicidad
-                    await FirebaseFirestore.instance.runTransaction((transaction) async {
-                      final sellerRef = FirebaseFirestore.instance.collection('users').doc(seller.id);
-                      
-                      transaction.set(newStoreRef, newStore.toMap());
-                      transaction.update(sellerRef, {'storeId': newStore.id});
-                    });
+                    await _firestoreService.createStoreForSeller(
+                        newStore, seller.id);
 
                     if (!context.mounted) return;
                     Navigator.of(context).pop();
@@ -307,6 +305,17 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     );
   }
 
+  List<um.UserModel> _filterUsers(List<um.UserModel> users) {
+    return users.where((user) {
+      final matchesSearch =
+          user.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              user.email.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesRole =
+          _selectedRoleFilter == 'Todos' || user.role == _selectedRoleFilter;
+      return matchesSearch && matchesRole;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -314,46 +323,98 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         leading: const BackButton(),
         title: const Text('Gestionar Usuarios'),
       ),
-      // Se añade el Drawer para navegación consistente y botón de atrás automático.
-      drawer: _buildDrawer(context),
-      body: StreamBuilder<List<um.UserModel>>(
-        stream: _firestoreService.getUsersStream(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No hay usuarios registrados.'));
-          }
-
-          final users = snapshot.data!;
-          final groupedUsers = groupBy(users, (um.UserModel user) => user.role);
-
-          return ListView.builder(
-            itemCount: groupedUsers.keys.length,
-            itemBuilder: (context, index) {
-              final role = groupedUsers.keys.elementAt(index);
-              final usersInRole = groupedUsers[role]!;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
-                    child: Text(
-                      '$role (${usersInRole.length})',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.deepPurple,
-                      ),
+      drawer: const AdminDrawer(),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Buscar por nombre o email...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  ...usersInRole.map((user) => _buildUserCard(user)),
-                ],
-              );
-            },
-          );
-        },
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedRoleFilter,
+                  decoration:
+                      const InputDecoration(labelText: 'Filtrar por rol'),
+                  items: [
+                    'Todos',
+                    'Cliente',
+                    'Vendedor',
+                    'Administrador',
+                    'Repartidor'
+                  ]
+                      .map((role) => DropdownMenuItem(
+                            value: role,
+                            child: Text(role),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedRoleFilter = value!;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<List<um.UserModel>>(
+              stream: _firestoreService.getUsersStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(
+                      child: Text('No hay usuarios registrados.'));
+                }
+
+                final allUsers = snapshot.data!;
+                final filteredUsers = _filterUsers(allUsers);
+                final groupedUsers =
+                    groupBy(filteredUsers, (um.UserModel user) => user.role);
+
+                return ListView.builder(
+                  itemCount: groupedUsers.keys.length,
+                  itemBuilder: (context, index) {
+                    final role = groupedUsers.keys.elementAt(index);
+                    final usersInRole = groupedUsers[role]!;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+                          child: Text(
+                            '$role (${usersInRole.length})',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepPurple,
+                            ),
+                          ),
+                        ),
+                        ...usersInRole.map((user) => _buildUserCard(user)),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showUserDialog(),
@@ -372,8 +433,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           backgroundColor: Colors.deepPurple[100],
           child: Text(user.name.isNotEmpty ? user.name[0].toUpperCase() : '?'),
         ),
-        title:
-            Text(user.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+        title: Text(user.name,
+            style: const TextStyle(fontWeight: FontWeight.w500)),
         subtitle: Text(user.email),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -403,68 +464,6 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // Se añade el método para construir el menú lateral.
-  Widget _buildDrawer(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Colors.deepPurple),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text('Urban Market',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold)),
-                Text('Administrador',
-                    style: TextStyle(color: Colors.white70, fontSize: 14)),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.store),
-            title: const Text('Gestionar Tiendas'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/admin-manage-stores');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text('Gestionar Usuarios'),
-            onTap: () {
-              // Si ya estamos en la pantalla, solo cerramos el drawer.
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.shopping_cart),
-            title: const Text('Gestionar Pedidos'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/admin-manage-orders');
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Cerrar Sesión'),
-            onTap: () {
-              authProvider.logout();
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/', (Route<dynamic> route) => false);
-            },
-          ),
-        ],
       ),
     );
   }

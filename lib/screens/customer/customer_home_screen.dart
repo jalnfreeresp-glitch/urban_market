@@ -5,10 +5,17 @@ import 'package:urban_market/models/store_model.dart' as sm;
 import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/services/firestore_service.dart';
 
-class CustomerHomeScreen extends StatelessWidget {
+class CustomerHomeScreen extends StatefulWidget {
   static const routeName = '/customer';
 
   const CustomerHomeScreen({super.key});
+
+  @override
+  State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();
+}
+
+class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
+  String? _selectedCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -155,21 +162,34 @@ class CustomerHomeScreen extends StatelessWidget {
   }
 
   Widget _buildCategoryItem(String title, IconData icon) {
+    final isSelected = _selectedCategory == title;
     return Container(
       width: 100, // Ancho fijo para cada item
       margin: const EdgeInsets.only(right: 12),
       child: Card(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: isSelected ? Colors.deepPurple.withOpacity(0.1) : null,
         child: InkWell(
-          onTap: () {}, // TODO: Implementar filtro por categoría
+          onTap: () {
+            setState(() {
+              if (isSelected) {
+                _selectedCategory = null;
+              } else {
+                _selectedCategory = title;
+              }
+            });
+          },
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.deepPurple),
+              Icon(icon,
+                  color: isSelected ? Colors.deepPurple : Colors.grey[700]),
               const SizedBox(height: 4),
               Text(title,
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: isSelected ? Colors.deepPurple : Colors.grey[700]),
                   textAlign: TextAlign.center),
             ],
           ),
@@ -182,7 +202,10 @@ class CustomerHomeScreen extends StatelessWidget {
     final firestoreService = FirestoreService();
     // Se usa el alias 'sm' y se corrige el nombre del método a 'getActiveStoresStream'.
     return StreamBuilder<List<sm.StoreModel>>(
-      stream: firestoreService.getActiveStoresStream(),
+      stream: _selectedCategory == null
+          ? firestoreService.getActiveStoresStream()
+          : firestoreService
+              .getActiveStoresStreamByCategory(_selectedCategory!),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

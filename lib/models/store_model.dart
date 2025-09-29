@@ -13,6 +13,7 @@ class StoreModel {
   final String category;
   final String openingTime;
   final String closingTime;
+  final double deliveryFee;
   // Campos de Pagomovil
   final String paymentPhoneNumber;
   final String paymentBankName;
@@ -33,6 +34,7 @@ class StoreModel {
     this.category = 'General',
     this.openingTime = '09:00',
     this.closingTime = '21:00',
+    this.deliveryFee = 5.0,
     required this.paymentPhoneNumber,
     required this.paymentBankName,
     required this.paymentNationalId,
@@ -55,6 +57,7 @@ class StoreModel {
       category: data['category'] ?? 'General',
       openingTime: data['openingTime'] ?? '09:00',
       closingTime: data['closingTime'] ?? '21:00',
+      deliveryFee: (data['deliveryFee'] ?? 5.0).toDouble(),
       paymentPhoneNumber: data['paymentPhoneNumber'] ?? '',
       paymentBankName: data['paymentBankName'] ?? '',
       paymentNationalId: data['paymentNationalId'] ?? '',
@@ -77,6 +80,7 @@ class StoreModel {
       'category': category,
       'openingTime': openingTime,
       'closingTime': closingTime,
+      'deliveryFee': deliveryFee,
       'paymentPhoneNumber': paymentPhoneNumber,
       'paymentBankName': paymentBankName,
       'paymentNationalId': paymentNationalId,
@@ -99,6 +103,7 @@ class StoreModel {
     String? category,
     String? openingTime,
     String? closingTime,
+    double? deliveryFee,
     String? paymentPhoneNumber,
     String? paymentBankName,
     String? paymentNationalId,
@@ -118,6 +123,7 @@ class StoreModel {
       category: category ?? this.category,
       openingTime: openingTime ?? this.openingTime,
       closingTime: closingTime ?? this.closingTime,
+      deliveryFee: deliveryFee ?? this.deliveryFee,
       paymentPhoneNumber: paymentPhoneNumber ?? this.paymentPhoneNumber,
       paymentBankName: paymentBankName ?? this.paymentBankName,
       paymentNationalId: paymentNationalId ?? this.paymentNationalId,

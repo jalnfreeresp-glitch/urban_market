@@ -1,5 +1,6 @@
 // lib/models/order_model.dart (Definitivo)
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:urban_market/models/cart_item_model.dart';
 
 // Enum para los estados del pedido. Es más seguro que usar Strings.
@@ -10,6 +11,25 @@ enum OrderStatus {
   outForDelivery,
   delivered,
   cancelled,
+}
+
+extension OrderStatusExtension on OrderStatus {
+  Color get color {
+    switch (this) {
+      case OrderStatus.pending:
+        return Colors.orange;
+      case OrderStatus.confirmed:
+        return Colors.blueAccent;
+      case OrderStatus.inProgress:
+        return Colors.blue;
+      case OrderStatus.outForDelivery:
+        return Colors.purple;
+      case OrderStatus.delivered:
+        return Colors.green;
+      case OrderStatus.cancelled:
+        return Colors.red;
+    }
+  }
 }
 
 class OrderModel {
