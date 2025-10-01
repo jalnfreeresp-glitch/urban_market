@@ -1,10 +1,9 @@
+// lib/screens/admin/admin_home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/providers/order_provider.dart';
 import 'package:urban_market/providers/product_provider.dart';
-import 'package:urban_market/screens/admin/admin_seller_balances_screen.dart';
-
 import 'package:urban_market/widgets/admin_balance_card.dart';
 
 class AdminHomeScreen extends StatefulWidget {
@@ -162,6 +161,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 Icons.receipt_long,
                 Colors.orange,
                 () => Navigator.pushNamed(context, '/admin-manage-orders')),
+            _buildActionCard(
+                context,
+                'Panel de Control',
+                Icons.dashboard,
+                Colors.purple,
+                () => Navigator.pushNamed(context, '/admin-dashboard')),
           ],
         ),
       ],
@@ -189,4 +194,3 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 }
-

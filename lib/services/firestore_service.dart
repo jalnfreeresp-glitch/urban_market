@@ -1,5 +1,5 @@
+// lib/services/firestore_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-// Se usan alias en todas las importaciones de modelos para consistencia.
 import 'package:urban_market/models/order_model.dart' as om;
 import 'package:urban_market/models/product_model.dart' as pm;
 import 'package:urban_market/models/store_model.dart' as sm;
@@ -8,7 +8,6 @@ import 'package:urban_market/models/user_model.dart' as um;
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // Se usan conversores para asegurar el tipado al leer/escribir en Firestore.
   CollectionReference<um.UserModel> get _users =>
       _db.collection('users').withConverter<um.UserModel>(
             fromFirestore: (snap, _) =>
@@ -47,7 +46,6 @@ class FirestoreService {
   Future<void> updateUser(um.UserModel user) =>
       _users.doc(user.id).update(user.toMap());
 
-  // Método añadido para obtener solo los vendedores.
   Stream<List<um.UserModel>> getSellersStream() => _users
       .where('role', isEqualTo: 'Vendedor')
       .snapshots()
@@ -57,7 +55,6 @@ class FirestoreService {
   Future<void> createStore(sm.StoreModel store) =>
       _stores.doc(store.id).set(store);
 
-  // Método añadido para obtener todas las tiendas.
   Stream<List<sm.StoreModel>> getStoresStream() => _stores
       .snapshots()
       .map((snap) => snap.docs.map((doc) => doc.data()).toList());
@@ -66,6 +63,13 @@ class FirestoreService {
       .where('isActive', isEqualTo: true)
       .snapshots()
       .map((snap) => snap.docs.map((doc) => doc.data()).toList());
+
+  Stream<List<sm.StoreModel>> getActiveStoresStreamByCategory(String category) => _stores
+      .where('isActive', isEqualTo: true)
+      .where('category', isEqualTo: category)
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) => doc.data()).toList());
+
   Future<sm.StoreModel?> getStoreByOwner(String ownerId) async {
     final snap =
         await _stores.where('ownerId', isEqualTo: ownerId).limit(1).get();
@@ -76,6 +80,17 @@ class FirestoreService {
       _stores.doc(store.id).update(store.toMap());
   Future<sm.StoreModel?> getStore(String storeId) async =>
       (await _stores.doc(storeId).get()).data();
+
+  // Nuevo método: crear tienda y asignarla a un vendedor
+  Future<void> createStoreForSeller(
+      sm.StoreModel store, String sellerId) async {
+    final storeRef = _stores.doc(store.id);
+    final userRef = _users.doc(sellerId);
+    await _db.runTransaction((transaction) async {
+      transaction.set(storeRef, store);
+      transaction.update(userRef, {'storeId': store.id});
+    });
+  }
 
   // --- MÉTODOS DE PRODUCTO ---
   Future<void> createProduct(pm.ProductModel product) =>

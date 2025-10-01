@@ -210,7 +210,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   Widget _buildFeaturedStores(BuildContext context) {
     final firestoreService = FirestoreService();
     return StreamBuilder<List<sm.StoreModel>>(
-      stream: firestoreService.getActiveStoresStream(),
+      stream: _selectedCategory == null
+          ? firestoreService.getActiveStoresStream()
+          : firestoreService
+              .getActiveStoresStreamByCategory(_selectedCategory!),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/models/store_model.dart';
 import 'package:urban_market/models/user_model.dart' as user_model;
-import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/services/firestore_service.dart';
 
 class ManageStoresScreen extends StatefulWidget {
@@ -28,6 +28,8 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
         TextEditingController(text: store?.openingTime);
     final closingTimeController =
         TextEditingController(text: store?.closingTime);
+    final deliveryFeeController =
+        TextEditingController(text: store?.deliveryFee.toString());
     final paymentPhoneNumberController =
         TextEditingController(text: store?.paymentPhoneNumber);
     final paymentBankNameController =
@@ -194,6 +196,7 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                     category: selectedCategory!,
                     openingTime: openingTimeController.text,
                     closingTime: closingTimeController.text,
+                    deliveryFee: double.parse(deliveryFeeController.text),
                     ownerId: selectedOwnerId!,
                     imageUrl: store?.imageUrl ?? '',
                     rating: store?.rating ?? 0,
@@ -226,7 +229,6 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),

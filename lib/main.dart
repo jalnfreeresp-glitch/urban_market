@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,7 +9,7 @@ import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/providers/cart_provider.dart';
 import 'package:urban_market/providers/order_provider.dart';
 import 'package:urban_market/providers/product_provider.dart';
-import 'package:urban_market/screens/admin/admin_home_screen.dart';
+import 'package:urban_market/screens/admin/admin_dashboard_screen.dart'; // Agregar esta línea
 import 'package:urban_market/screens/customer/customer_home_screen.dart';
 import 'package:urban_market/screens/delivery/delivery_home_screen.dart';
 import 'package:urban_market/screens/login_screen.dart';
@@ -25,8 +26,6 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
-        // ChangeNotifierProxyProvider permite que un provider dependa de otro.
-        // Aquí, ProductProvider y OrderProvider necesitan AuthProvider para saber qué usuario está logueado.
         ChangeNotifierProxyProvider<AuthProvider, ProductProvider>(
           create: (_) => ProductProvider(null),
           update: (_, auth, previous) => ProductProvider(auth),
@@ -64,7 +63,6 @@ class UrbanMarketApp extends StatelessWidget {
   }
 }
 
-// Este Widget gestiona qué pantalla mostrar basado en el estado de autenticación.
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -86,18 +84,16 @@ class AuthWrapper extends StatelessWidget {
   }
 
   Widget _getHomeScreen(um.UserModel user) {
-    // Convertimos el rol a minúsculas para una comparación robusta.
     switch (user.role.toLowerCase()) {
       case 'cliente':
         return const CustomerHomeScreen();
       case 'vendedor':
         return const SellerHomeScreen();
       case 'administrador':
-        return const AdminHomeScreen();
+        return const AdminDashboardScreen(); // Cambiado a AdminDashboardScreen
       case 'repartidor':
         return const DeliveryHomeScreen();
       default:
-        // Si el rol no se reconoce, se envía al login por seguridad.
         return const LoginScreen();
     }
   }
