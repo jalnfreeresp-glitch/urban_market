@@ -112,8 +112,7 @@ class CartScreen extends StatelessWidget {
                 final orderProvider =
                     Provider.of<OrderProvider>(context, listen: false);
 
-                // Se resuelve el TODO de la tarifa de envío con un valor fijo.
-                const deliveryFee = 5.00;
+                const deliveryFee = 5.00; // Tarifa de envío fija
                 final total = cart.totalAmount + deliveryFee;
 
                 // Se utiliza el constructor de OrderModel con los nombres de campo correctos.

@@ -123,12 +123,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 TextButton(
                                   child: const Text('Sí'),
                                   onPressed: () {
-                                    // En lugar de copyWith, actualizamos el producto con isActive = false
                                     Provider.of<ProductProvider>(context,
                                             listen: false)
-                                        .updateProduct(
-                                      product.copyWith(isActive: false),
-                                    );
+                                        .deleteProduct(product.id);
                                     Navigator.of(ctx).pop();
                                   },
                                 ),

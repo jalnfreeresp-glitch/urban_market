@@ -24,7 +24,6 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
         TextEditingController(text: store?.description);
     final addressController = TextEditingController(text: store?.address);
     final phoneController = TextEditingController(text: store?.phone);
-    final categoryController = TextEditingController(text: store?.category);
     final openingTimeController =
         TextEditingController(text: store?.openingTime);
     final closingTimeController =
@@ -37,6 +36,20 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
         TextEditingController(text: store?.paymentNationalId);
     String? selectedOwnerId = store?.ownerId;
 
+    String? selectedCategory = store?.category;
+    final List<String> categories = [
+      'Restaurantes',
+      'Supermercados',
+      'Electrónicos',
+      'Ropa',
+      'Hogar',
+      'Bodega' // Added Bodega category
+    ];
+
+    if (selectedCategory != null && !categories.contains(selectedCategory)) {
+      selectedCategory = null;
+    }
+
     showDialog(
       context: context,
       builder: (context) {
@@ -45,102 +58,122 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
           content: Form(
             key: formKey,
             child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Nombre'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  TextFormField(
-                    controller: descriptionController,
-                    decoration: const InputDecoration(labelText: 'Descripción'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  TextFormField(
-                    controller: addressController,
-                    decoration: const InputDecoration(labelText: 'Dirección'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  TextFormField(
-                    controller: phoneController,
-                    decoration: const InputDecoration(labelText: 'Teléfono'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  TextFormField(
-                    controller: categoryController,
-                    decoration: const InputDecoration(labelText: 'Categoría'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  TextFormField(
-                    controller: openingTimeController,
-                    decoration:
-                        const InputDecoration(labelText: 'Hora de apertura'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  TextFormField(
-                    controller: closingTimeController,
-                    decoration:
-                        const InputDecoration(labelText: 'Hora de cierre'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  TextFormField(
-                    controller: paymentPhoneNumberController,
-                    decoration: const InputDecoration(
-                        labelText: 'Número de teléfono (Pagomovil)'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  TextFormField(
-                    controller: paymentBankNameController,
-                    decoration:
-                        const InputDecoration(labelText: 'Banco (Pagomovil)'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  TextFormField(
-                    controller: paymentNationalIdController,
-                    decoration: const InputDecoration(
-                        labelText: 'Cédula de Identidad (Pagomovil)'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  StreamBuilder<List<user_model.UserModel>>(
-                    stream: _firestoreService.getSellersStream(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const CircularProgressIndicator();
-                      }
-                      final sellers = snapshot.data!;
-                      return DropdownButtonFormField<String>(
-                        initialValue: selectedOwnerId,
-                        decoration: const InputDecoration(
-                            labelText: 'Dueño de la tienda'),
-                        items: sellers.map((user_model.UserModel seller) {
+              child: StatefulBuilder(
+                builder: (BuildContext context, StateSetter setState) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(labelText: 'Nombre'),
+                        validator: (value) =>
+                            value!.isEmpty ? 'Campo requerido' : null,
+                      ),
+                      TextFormField(
+                        controller: descriptionController,
+                        decoration:
+                            const InputDecoration(labelText: 'Descripción'),
+                        validator: (value) =>
+                            value!.isEmpty ? 'Campo requerido' : null,
+                      ),
+                      TextFormField(
+                        controller: addressController,
+                        decoration:
+                            const InputDecoration(labelText: 'Dirección'),
+                        validator: (value) =>
+                            value!.isEmpty ? 'Campo requerido' : null,
+                      ),
+                      TextFormField(
+                        controller: phoneController,
+                        decoration:
+                            const InputDecoration(labelText: 'Teléfono'),
+                        validator: (value) =>
+                            value!.isEmpty ? 'Campo requerido' : null,
+                      ),
+                      DropdownButtonFormField<String>(
+                        initialValue:
+                            selectedCategory, // Using value is correct here because it's inside a StatefulBuilder
+                        decoration:
+                            const InputDecoration(labelText: 'Categoría'),
+                        items: categories.map((String category) {
                           return DropdownMenuItem<String>(
-                            value: seller.id,
-                            child: Text(seller.name),
+                            value: category,
+                            child: Text(category),
                           );
                         }).toList(),
-                        onChanged: (value) {
+                        onChanged: (newValue) {
                           setState(() {
-                            selectedOwnerId = value;
+                            selectedCategory = newValue;
                           });
                         },
                         validator: (value) =>
                             value == null ? 'Campo requerido' : null,
-                      );
-                    },
-                  ),
-                ],
+                      ),
+                      TextFormField(
+                        controller: openingTimeController,
+                        decoration: const InputDecoration(
+                            labelText: 'Hora de apertura'),
+                        validator: (value) =>
+                            value!.isEmpty ? 'Campo requerido' : null,
+                      ),
+                      TextFormField(
+                        controller: closingTimeController,
+                        decoration:
+                            const InputDecoration(labelText: 'Hora de cierre'),
+                        validator: (value) =>
+                            value!.isEmpty ? 'Campo requerido' : null,
+                      ),
+                      TextFormField(
+                        controller: paymentPhoneNumberController,
+                        decoration: const InputDecoration(
+                            labelText: 'Número de teléfono (Pagomovil)'),
+                        validator: (value) =>
+                            value!.isEmpty ? 'Campo requerido' : null,
+                      ),
+                      TextFormField(
+                        controller: paymentBankNameController,
+                        decoration: const InputDecoration(
+                            labelText: 'Banco (Pagomovil)'),
+                        validator: (value) =>
+                            value!.isEmpty ? 'Campo requerido' : null,
+                      ),
+                      TextFormField(
+                        controller: paymentNationalIdController,
+                        decoration: const InputDecoration(
+                            labelText: 'Cédula de Identidad (Pagomovil)'),
+                        validator: (value) =>
+                            value!.isEmpty ? 'Campo requerido' : null,
+                      ),
+                      StreamBuilder<List<user_model.UserModel>>(
+                        stream: _firestoreService.getSellersStream(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const CircularProgressIndicator();
+                          }
+                          final sellers = snapshot.data!;
+                          return DropdownButtonFormField<String>(
+                            initialValue: selectedOwnerId,
+                            decoration: const InputDecoration(
+                                labelText: 'Dueño de la tienda'),
+                            items: sellers.map((user_model.UserModel seller) {
+                              return DropdownMenuItem<String>(
+                                value: seller.id,
+                                child: Text(seller.name),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedOwnerId = value;
+                              });
+                            },
+                            validator: (value) =>
+                                value == null ? 'Campo requerido' : null,
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -158,7 +191,7 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                     description: descriptionController.text,
                     address: addressController.text,
                     phone: phoneController.text,
-                    category: categoryController.text,
+                    category: selectedCategory!,
                     openingTime: openingTimeController.text,
                     closingTime: closingTimeController.text,
                     ownerId: selectedOwnerId!,
@@ -180,7 +213,6 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
 
                   if (!context.mounted) return;
                   Navigator.of(context).pop();
-                  setState(() {});
                 }
               },
               child: const Text('Guardar'),
@@ -287,7 +319,6 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
                                   );
                                   await _firestoreService
                                       .updateStore(updatedStore);
-                                  setState(() {});
                                 },
                               ),
                             ),
@@ -345,7 +376,6 @@ class _ManageStoresScreenState extends State<ManageStoresScreen> {
             leading: const Icon(Icons.store),
             title: const Text('Gestionar Tiendas'),
             onTap: () {
-              // Si ya estamos en la pantalla, solo cerramos el drawer.
               Navigator.pop(context);
             },
           ),

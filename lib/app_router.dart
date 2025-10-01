@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-// Se usan alias en todas las importaciones de modelos para consistencia.
 import 'package:urban_market/models/product_model.dart' as pm;
 import 'package:urban_market/models/store_model.dart' as sm;
 import 'package:urban_market/screens/admin/admin_home_screen.dart';
+import 'package:urban_market/screens/admin/admin_seller_balances_screen.dart';
 import 'package:urban_market/screens/admin/manage_orders_screen.dart';
 import 'package:urban_market/screens/admin/manage_stores_screen.dart';
 import 'package:urban_market/screens/admin/manage_users_screen.dart';
@@ -21,7 +21,6 @@ import 'package:urban_market/screens/seller/seller_home_screen.dart';
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      // Se usan routeName estáticos para evitar errores de tipeo.
       case AdminHomeScreen.routeName:
         return MaterialPageRoute(builder: (_) => const AdminHomeScreen());
       case ManageStoresScreen.routeName:
@@ -30,6 +29,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ManageUsersScreen());
       case ManageOrdersScreen.routeName:
         return MaterialPageRoute(builder: (_) => const ManageOrdersScreen());
+      case AdminSellerBalancesScreen.routeName:
+        return MaterialPageRoute(builder: (_) => const AdminSellerBalancesScreen());
 
       case CustomerHomeScreen.routeName:
         return MaterialPageRoute(builder: (_) => const CustomerHomeScreen());

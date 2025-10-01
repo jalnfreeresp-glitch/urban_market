@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:urban_market/models/store_model.dart';
 import 'package:urban_market/providers/auth_provider.dart';
+import 'package:urban_market/providers/order_provider.dart';
+import 'package:urban_market/providers/product_provider.dart';
 import 'package:urban_market/services/firestore_service.dart';
+
+import 'package:urban_market/widgets/seller_balance_card.dart';
 
 class SellerHomeScreen extends StatefulWidget {
   static const routeName = '/seller';
@@ -20,7 +24,11 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchStore();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Initialize listeners for orders and balances
+      Provider.of<OrderProvider>(context, listen: false).listenToOrders();
+      _fetchStore();
+    });
   }
 
   Future<void> _fetchStore() async {
@@ -37,28 +45,27 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Vendedor'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
-      drawer: _buildDrawer(context, authProvider),
+      drawer: _buildDrawer(context),
       body: _store == null
           ? const Center(child: CircularProgressIndicator())
           : _buildBody(context),
     );
   }
 
-  Widget _buildDrawer(BuildContext context, AuthProvider authProvider) {
+  Widget _buildDrawer(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(
+          DrawerHeader(
+            decoration: const BoxDecoration(
               color: Colors.deepPurple,
             ),
             child: Column(
@@ -66,14 +73,14 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
-                  'Urban Market',
-                  style: TextStyle(
+                  _store?.name ?? 'Vendedor',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
+                const Text(
                   'Vendedor',
                   style: TextStyle(
                     color: Colors.white70,
@@ -111,6 +118,14 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
             leading: const Icon(Icons.logout),
             title: const Text('Cerrar Sesión'),
             onTap: () {
+              final productProvider =
+                  Provider.of<ProductProvider>(context, listen: false);
+              final orderProvider =
+                  Provider.of<OrderProvider>(context, listen: false);
+
+              productProvider.clearListeners();
+              orderProvider.clearListeners();
+
               authProvider.logout();
               Navigator.of(context).pushNamedAndRemoveUntil(
                   '/', (Route<dynamic> route) => false);
@@ -122,119 +137,34 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
   }
 
   Widget _buildBody(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Bienvenido, ${_store!.name}',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Text(_store!.isOpen ? 'Tienda Abierta' : 'Tienda Cerrada'),
-              Switch(
-                value: _store!.isOpen,
-                onChanged: (value) async {
-                  final updatedStore = _store!.copyWith(isOpen: value);
-                  await _firestoreService.updateStore(updatedStore);
-                  setState(() {
-                    _store = updatedStore;
-                  });
-                },
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bienvenido, ${_store!.name}',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildStatsCard(),
-          const SizedBox(height: 20),
-          _buildQuickActions(context),
-        ],
+            ),
+            const SizedBox(height: 20),
+            const SellerBalanceCard(), // New Balance Card Widget
+            const SizedBox(height: 20),
+            _buildQuickActions(context),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatsCard() {
-    return FutureBuilder<List<num>>(
-      future: _fetchSellerStats(),
-      builder: (context, snapshot) {
-        final productos = snapshot.hasData ? snapshot.data![0].toString() : '-';
-        final pedidos = snapshot.hasData ? snapshot.data![1].toString() : '-';
-        final ventas = snapshot.hasData ? 'S/. ${snapshot.data![2]}' : '-';
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                const Text(
-                  'Estadísticas',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStatItem(
-                        'Productos', productos, Icons.shopping_basket),
-                    _buildStatItem('Pedidos', pedidos, Icons.list_alt),
-                    _buildStatItem('Ventas', ventas, Icons.attach_money),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<List<num>> _fetchSellerStats() async {
-    if (_store == null) return [0, 0, 0];
-    final productos =
-        (await _firestoreService.getProductsByStoreStream(_store!.id).first)
-            .length;
-    final pedidos =
-        (await _firestoreService.getOrdersByStoreStream(_store!.id).first)
-            .length;
-    final ventas =
-        (await _firestoreService.getOrdersByStoreStream(_store!.id).first)
-            .fold<double>(0, (sum, order) => sum + order.total);
-    return [productos, pedidos, ventas];
-  }
-
-  Widget _buildStatItem(String title, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, size: 30, color: Colors.deepPurple),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildQuickActions(BuildContext context) {
+    // This could be further simplified, but left as is for now.
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -248,27 +178,22 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildActionCard(
                   context,
-                  'Agregar Producto',
-                  Icons.add,
+                  'Mis Productos',
+                  Icons.shopping_basket,
                   Colors.green,
-                  () {
-                    Navigator.pushNamed(context, '/products');
-                  },
+                  () => Navigator.pushNamed(context, '/products'),
                 ),
                 _buildActionCard(
                   context,
-                  'Ver Pedidos',
+                  'Mis Pedidos',
                   Icons.list_alt,
                   Colors.blue,
-                  () {
-                    Navigator.pushNamed(context, '/orders');
-                  },
+                  () => Navigator.pushNamed(context, '/orders'),
                 ),
               ],
             ),
@@ -287,38 +212,18 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
   ) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 120,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: const [
-            BoxShadow(
-              color: Color.fromRGBO(158, 158, 158, 0.3),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Icon(icon, size: 40, color: color),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: color,
+            child: Icon(icon, size: 30, color: Colors.white),
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(title, textAlign: TextAlign.center),
+        ],
       ),
     );
   }
 }
+

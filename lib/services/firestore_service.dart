@@ -92,6 +92,8 @@ class FirestoreService {
   Future<void> updateProduct(pm.ProductModel product) =>
       _products.doc(product.id).update(product.toMap());
 
+  Future<void> deleteProduct(String productId) => _products.doc(productId).delete();
+
   // --- MÉTODOS DE ÓRDENES ---
   Future<void> createOrder(om.OrderModel order) =>
       _orders.doc(order.id).set(order);
@@ -108,6 +110,16 @@ class FirestoreService {
       .snapshots()
       .map((snap) => snap.docs.map((doc) => doc.data()).toList());
 
+  Stream<List<om.OrderModel>> getDeliveredOrdersByStoreStream(
+          String storeId, DateTime start, DateTime end) =>
+      _orders
+          .where('storeId', isEqualTo: storeId)
+          .where('status', isEqualTo: om.OrderStatus.delivered.name)
+          .where('createdAt', isGreaterThanOrEqualTo: start)
+          .where('createdAt', isLessThanOrEqualTo: end)
+          .snapshots()
+          .map((snap) => snap.docs.map((doc) => doc.data()).toList());
+
   Stream<List<om.OrderModel>> getOrdersByDeliveryPersonStream(
           String deliveryPersonId) =>
       _orders
@@ -118,6 +130,11 @@ class FirestoreService {
 
   Stream<List<om.OrderModel>> getAllOrdersStream() => _orders
       .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) => doc.data()).toList());
+
+  Stream<List<om.OrderModel>> getAllDeliveredOrdersStream() => _orders
+      .where('status', isEqualTo: om.OrderStatus.delivered.name)
       .snapshots()
       .map((snap) => snap.docs.map((doc) => doc.data()).toList());
 

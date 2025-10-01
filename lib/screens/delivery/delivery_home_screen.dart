@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:urban_market/models/order_model.dart';
+import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/providers/order_provider.dart';
 
 class DeliveryHomeScreen extends StatefulWidget {
@@ -31,6 +32,7 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
+      drawer: _buildDrawer(context), // Drawer added
       body: Consumer<OrderProvider>(
         builder: (context, orderProvider, child) {
           final inProcessOrders = orderProvider.inProcessOrders;
@@ -107,14 +109,13 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
                         'Productos:',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      ...order.items
-                          .map((item) => ListTile(
-                                leading: const Icon(Icons.shopping_basket),
-                                title: Text(item.product.name),
-                                subtitle: Text('Cantidad: ${item.quantity}'),
-                                trailing: Text(
-                                    'S/. ${(item.product.price * item.quantity).toStringAsFixed(2)}'),
-                              )),
+                      ...order.items.map((item) => ListTile(
+                            leading: const Icon(Icons.shopping_basket),
+                            title: Text(item.product.name),
+                            subtitle: Text('Cantidad: ${item.quantity}'),
+                            trailing: Text(
+                                'S/. ${(item.product.price * item.quantity).toStringAsFixed(2)}'),
+                          )),
                       const SizedBox(height: 16),
                       Row(
                         children: [
@@ -156,6 +157,57 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          const DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.deepPurple,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'Urban Market',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Repartidor',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: const Text('Cerrar Sesión'),
+            onTap: () {
+              // Clear listeners before logging out
+              orderProvider.clearListeners();
+
+              authProvider.logout();
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/', (Route<dynamic> route) => false);
+            },
+          ),
+        ],
       ),
     );
   }

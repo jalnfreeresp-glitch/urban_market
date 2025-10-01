@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:urban_market/models/user_model.dart' as um;
 import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/providers/order_provider.dart';
 import 'package:urban_market/providers/product_provider.dart';
-import 'package:urban_market/services/firestore_service.dart';
+import 'package:urban_market/screens/admin/admin_seller_balances_screen.dart';
 
-// 1. Se convierte en un StatefulWidget
+import 'package:urban_market/widgets/admin_balance_card.dart';
+
 class AdminHomeScreen extends StatefulWidget {
   static const routeName = '/admin';
 
@@ -17,21 +17,16 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  // 2. La lógica que cambia el estado se mueve a initState
   @override
   void initState() {
     super.initState();
-    // Se usa addPostFrameCallback para asegurar que el build haya terminado
-    // antes de llamar al provider.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // La llamada al provider se hace aquí, fuera del método build.
       Provider.of<OrderProvider>(context, listen: false).listenToOrders();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // El método build ahora solo se enfoca en construir la UI.
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel de Administrador'),
@@ -64,6 +59,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
           ),
           ListTile(
+            leading: const Icon(Icons.dashboard),
+            title: const Text('Dashboard'),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
             leading: const Icon(Icons.store),
             title: const Text('Gestionar Tiendas'),
             onTap: () {
@@ -80,7 +80,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.shopping_cart),
+            leading: const Icon(Icons.receipt_long),
             title: const Text('Gestionar Pedidos'),
             onTap: () {
               Navigator.pop(context);
@@ -92,6 +92,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             leading: const Icon(Icons.logout),
             title: const Text('Cerrar Sesión'),
             onTap: () {
+              final productProvider =
+                  Provider.of<ProductProvider>(context, listen: false);
+              final orderProvider =
+                  Provider.of<OrderProvider>(context, listen: false);
+
+              // Clean up listeners before logging out
+              productProvider.clearListeners();
+              orderProvider.clearListeners();
+
               authProvider.logout();
               Navigator.of(context).pushNamedAndRemoveUntil(
                   '/', (Route<dynamic> route) => false);
@@ -112,59 +121,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             const Text('Bienvenido, Administrador',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-            _buildStatsCard(),
+            const AdminBalanceCard(), // New Balance Card
             const SizedBox(height: 20),
             _buildQuickActions(context),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildStatsCard() {
-    final firestoreService = FirestoreService();
-    return StreamBuilder<List<um.UserModel>>(
-      stream: firestoreService.getUsersStream(),
-      builder: (context, userSnapshot) {
-        return Consumer2<ProductProvider, OrderProvider>(
-          builder: (context, productProvider, orderProvider, child) {
-            final tiendas = productProvider.stores.length.toString();
-            final pedidos = orderProvider.orders.length.toString();
-            final usuarios = userSnapshot.hasData
-                ? userSnapshot.data!.length.toString()
-                : '-';
-
-            return Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStatItem('Tiendas', tiendas, Icons.store),
-                    _buildStatItem('Pedidos', pedidos, Icons.shopping_cart),
-                    _buildStatItem('Usuarios', usuarios, Icons.people),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildStatItem(String title, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, size: 30, color: Colors.deepPurple),
-        const SizedBox(height: 8),
-        Text(value,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      ],
     );
   }
 
@@ -197,7 +159,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             _buildActionCard(
                 context,
                 'Gestionar Pedidos',
-                Icons.shopping_cart,
+                Icons.receipt_long,
                 Colors.orange,
                 () => Navigator.pushNamed(context, '/admin-manage-orders')),
           ],
@@ -227,3 +189,4 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 }
+

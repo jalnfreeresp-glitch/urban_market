@@ -134,14 +134,6 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
         title: Text(widget.store.name),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_cart),
-            onPressed: () {
-              Navigator.of(context).pushNamed('/cart');
-            },
-          ),
-        ],
       ),
       body: Consumer<ProductProvider>(
         builder: (ctx, productProvider, child) {

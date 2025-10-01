@@ -14,6 +14,7 @@ class ProductProvider with ChangeNotifier {
   List<sm.StoreModel> _stores = [];
   List<pm.ProductModel> _sellerProducts = [];
   List<pm.ProductModel> _filteredProducts = [];
+  String? _selectedStoreId;
 
   StreamSubscription? _productsSubscription;
   StreamSubscription? _storesSubscription;
@@ -31,9 +32,17 @@ class ProductProvider with ChangeNotifier {
   ProductProvider(this._authProvider) {
     _listenToActiveProducts();
     _listenToActiveStores();
-    // Inicia la escucha de productos del vendedor si el rol es correcto.
     if (_authProvider?.user?.role == 'Vendedor') {
       listenToSellerProducts();
+    }
+  }
+
+  void _applyFilter() {
+    if (_selectedStoreId == null) {
+      _filteredProducts = [];
+    } else {
+      _filteredProducts =
+          _products.where((product) => product.storeId == _selectedStoreId).toList();
     }
   }
 
@@ -43,6 +52,7 @@ class ProductProvider with ChangeNotifier {
     _productsSubscription =
         _firestoreService.getActiveProductsStore().listen((productsData) {
       _products = productsData;
+      _applyFilter(); // Re-apply filter when products change
       _isLoading = false;
       notifyListeners();
     }, onError: (error) {
@@ -66,7 +76,6 @@ class ProductProvider with ChangeNotifier {
     final storeId = _authProvider?.user?.storeId;
     if (storeId == null) return;
 
-    // Escucha los productos específicos de la tienda del vendedor.
     _sellerProductsSubscription =
         _firestoreService.getProductsByStoreStream(storeId).listen((products) {
       _sellerProducts = products;
@@ -75,8 +84,8 @@ class ProductProvider with ChangeNotifier {
   }
 
   void filterProductsByStore(String storeId) {
-    _filteredProducts =
-        _products.where((product) => product.storeId == storeId).toList();
+    _selectedStoreId = storeId;
+    _applyFilter();
     notifyListeners();
   }
 
@@ -100,6 +109,27 @@ class ProductProvider with ChangeNotifier {
       debugPrint('Error updating product: $e');
       rethrow;
     }
+  }
+
+  Future<void> deleteProduct(String productId) async {
+    try {
+      await _firestoreService.deleteProduct(productId);
+    } catch (e) {
+      debugPrint('Error deleting product: $e');
+      rethrow;
+    }
+  }
+
+  void clearListeners() {
+    _productsSubscription?.cancel();
+    _storesSubscription?.cancel();
+    _sellerProductsSubscription?.cancel();
+    _products = [];
+    _stores = [];
+    _sellerProducts = [];
+    _filteredProducts = [];
+    _selectedStoreId = null;
+    notifyListeners();
   }
 
   @override

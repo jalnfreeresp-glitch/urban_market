@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// Se añade el alias 'sm' para consistencia.
 import 'package:urban_market/models/store_model.dart' as sm;
 import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/services/firestore_service.dart';
 
-class CustomerHomeScreen extends StatelessWidget {
+class CustomerHomeScreen extends StatefulWidget {
   static const routeName = '/customer';
 
   const CustomerHomeScreen({super.key});
+
+  @override
+  State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();
+}
+
+class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
+  String? _selectedCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +78,6 @@ class CustomerHomeScreen extends StatelessWidget {
             title: const Text('Mis Pedidos'),
             onTap: () {
               Navigator.pop(context);
-              // Asumiendo que hay una pantalla de órdenes para el cliente
               Navigator.pushNamed(context, '/orders');
             },
           ),
@@ -92,7 +97,6 @@ class CustomerHomeScreen extends StatelessWidget {
   }
 
   Widget _buildBody(BuildContext context) {
-    // Se envuelve en SingleChildScrollView para evitar desbordamientos.
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -138,15 +142,22 @@ class CustomerHomeScreen extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         SizedBox(
-          height: 80, // Aumentamos un poco la altura para que se vea mejor
+          height: 80,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              _buildCategoryItem('Restaurantes', Icons.restaurant),
-              _buildCategoryItem('Supermercados', Icons.local_grocery_store),
-              _buildCategoryItem('Electrónicos', Icons.phone_android),
-              _buildCategoryItem('Ropa', Icons.checkroom),
-              _buildCategoryItem('Hogar', Icons.home),
+              _buildCategoryItem(
+                  'Todas', Icons.apps, _selectedCategory == null),
+              _buildCategoryItem('Restaurantes', Icons.restaurant,
+                  _selectedCategory == 'Restaurantes'),
+              _buildCategoryItem('Supermercados', Icons.local_grocery_store,
+                  _selectedCategory == 'Supermercados'),
+              _buildCategoryItem('Electrónicos', Icons.phone_android,
+                  _selectedCategory == 'Electrónicos'),
+              _buildCategoryItem(
+                  'Ropa', Icons.checkroom, _selectedCategory == 'Ropa'),
+              _buildCategoryItem(
+                  'Hogar', Icons.home, _selectedCategory == 'Hogar'),
             ],
           ),
         ),
@@ -154,22 +165,40 @@ class CustomerHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryItem(String title, IconData icon) {
+  Widget _buildCategoryItem(String title, IconData icon, bool isSelected) {
     return Container(
-      width: 100, // Ancho fijo para cada item
+      width: 100,
       margin: const EdgeInsets.only(right: 12),
       child: Card(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: isSelected
+            ? Colors.deepPurple.withValues(alpha: 0.1)
+            : Colors.white,
         child: InkWell(
-          onTap: () {}, // TODO: Implementar filtro por categoría
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            setState(() {
+              if (title == 'Todas') {
+                _selectedCategory = null;
+              } else {
+                _selectedCategory = title;
+              }
+            });
+          },
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.deepPurple),
+              Icon(icon,
+                  color: isSelected ? Colors.deepPurple : Colors.grey[700]),
               const SizedBox(height: 4),
               Text(title,
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? Colors.deepPurple : Colors.black,
+                  ),
                   textAlign: TextAlign.center),
             ],
           ),
@@ -180,7 +209,6 @@ class CustomerHomeScreen extends StatelessWidget {
 
   Widget _buildFeaturedStores(BuildContext context) {
     final firestoreService = FirestoreService();
-    // Se usa el alias 'sm' y se corrige el nombre del método a 'getActiveStoresStream'.
     return StreamBuilder<List<sm.StoreModel>>(
       stream: firestoreService.getActiveStoresStream(),
       builder: (context, snapshot) {
@@ -190,7 +218,18 @@ class CustomerHomeScreen extends StatelessWidget {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(child: Text('No hay tiendas disponibles.'));
         }
+
         final stores = snapshot.data!;
+        final filteredStores = _selectedCategory == null
+            ? stores
+            : stores
+                .where((store) => store.category == _selectedCategory)
+                .toList();
+
+        if (filteredStores.isEmpty) {
+          return const Center(child: Text('No hay tiendas en esta categoría.'));
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -200,10 +239,9 @@ class CustomerHomeScreen extends StatelessWidget {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount:
-                  stores.length > 5 ? 5 : stores.length, // Muestra máximo 5
+              itemCount: filteredStores.length,
               itemBuilder: (ctx, index) =>
-                  _buildStoreCard(stores[index], context),
+                  _buildStoreCard(filteredStores[index], context),
             )
           ],
         );
@@ -211,7 +249,6 @@ class CustomerHomeScreen extends StatelessWidget {
     );
   }
 
-  // Se usa el alias 'sm' para el tipo de 'store'.
   Widget _buildStoreCard(sm.StoreModel store, BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
