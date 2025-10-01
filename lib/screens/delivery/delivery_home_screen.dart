@@ -18,9 +18,9 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Using addPostFrameCallback to avoid calling provider before the build is complete
+    // Llama al provider para que cargue los pedidos relevantes para el repartidor.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<OrderProvider>(context, listen: false).loadInProcessOrders();
+      Provider.of<OrderProvider>(context, listen: false).listenToOrders();
     });
   }
 
@@ -28,128 +28,56 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Panel de Delivery'),
+        title: const Text('Panel de Repartidor'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
-      drawer: _buildDrawer(context), // Drawer added
+      drawer: _buildDrawer(context),
       body: Consumer<OrderProvider>(
         builder: (context, orderProvider, child) {
-          final inProcessOrders = orderProvider.inProcessOrders;
+          // Usamos el getter que creamos en el OrderProvider.
+          final deliveryOrders = orderProvider.inProcessOrders;
 
-          if (inProcessOrders.isEmpty) {
+          if (orderProvider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (deliveryOrders.isEmpty) {
             return const Center(
-              child: Text('No hay pedidos pendientes de entrega'),
+              child: Text('No hay pedidos asignados para entrega'),
             );
           }
 
           return ListView.builder(
-            itemCount: inProcessOrders.length,
+            itemCount: deliveryOrders.length,
             itemBuilder: (context, index) {
-              final order = inProcessOrders[index];
+              final order = deliveryOrders[index];
               return Card(
-                margin: const EdgeInsets.all(10),
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Pedido #${order.id}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(order.status),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              _getStatusText(order.status),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildOrderHeader(order),
+                      const Divider(height: 24),
+                      _buildOrderInfo('Cliente:', order.userName),
+                      _buildOrderInfo('Teléfono:', order.userPhone),
+                      _buildOrderInfo('Tienda:', order.storeName),
+                      _buildOrderInfo('Dirección:', order.deliveryAddress),
                       const SizedBox(height: 8),
                       Text(
-                        'Cliente: ${order.userName}',
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      Text(
-                        'Tienda: ${order.storeName}',
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      Text(
-                        'Dirección: ${order.deliveryAddress}',
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Total: S/. ${order.total.toStringAsFixed(2)}',
+                        'Total: Bs. ${order.total.toStringAsFixed(2)}', // Símbolo de moneda cambiado
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Productos:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      ...order.items.map((item) => ListTile(
-                            leading: const Icon(Icons.shopping_basket),
-                            title: Text(item.product.name),
-                            subtitle: Text('Cantidad: ${item.quantity}'),
-                            trailing: Text(
-                                'S/. ${(item.product.price * item.quantity).toStringAsFixed(2)}'),
-                          )),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                // Aceptar el pedido
-                                orderProvider.updateOrderStatus(
-                                    order.id, OrderStatus.outForDelivery);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Aceptar'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                // Rechazar el pedido
-                                orderProvider.updateOrderStatus(
-                                    order.id, OrderStatus.cancelled);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Rechazar'),
-                            ),
-                          ),
-                        ],
-                      ),
+                      const SizedBox(height: 12),
+                      _buildActionButtons(context, order, orderProvider),
                     ],
                   ),
                 ),
@@ -161,18 +89,104 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
     );
   }
 
+  // --- Widgets Auxiliares para una UI más limpia ---
+
+  Widget _buildOrderHeader(OrderModel order) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Pedido #${order.id.substring(0, 6)}',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: _getStatusColor(order.status),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Text(
+            _getStatusText(order.status),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOrderInfo(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4.0),
+      child: RichText(
+        text: TextSpan(
+          style: DefaultTextStyle.of(context).style.copyWith(fontSize: 14),
+          children: [
+            TextSpan(
+                text: label,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            TextSpan(text: ' $value'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(
+      BuildContext context, OrderModel order, OrderProvider orderProvider) {
+    // Muestra diferentes botones según el estado actual del pedido
+    if (order.status == OrderStatus.inProgress) {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          icon: const Icon(Icons.motorcycle),
+          label: const Text('RECOGER PEDIDO'),
+          onPressed: () {
+            orderProvider.updateOrderStatus(
+                order.id, OrderStatus.outForDelivery);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blueAccent,
+            foregroundColor: Colors.white,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+      );
+    } else if (order.status == OrderStatus.outForDelivery) {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          icon: const Icon(Icons.check_circle_outline),
+          label: const Text('MARCAR COMO ENTREGADO'),
+          onPressed: () {
+            orderProvider.updateOrderStatus(order.id, OrderStatus.delivered);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+      );
+    }
+    // Si el estado es otro (entregado, cancelado, etc.), no se muestra ningún botón de acción.
+    return const SizedBox.shrink();
+  }
+
   Widget _buildDrawer(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
 
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           const DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.deepPurple,
-            ),
+            decoration: BoxDecoration(color: Colors.deepPurple),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
@@ -187,10 +201,7 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
                 ),
                 Text(
                   'Repartidor',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
@@ -199,9 +210,9 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
             leading: const Icon(Icons.logout),
             title: const Text('Cerrar Sesión'),
             onTap: () {
-              // Clear listeners before logging out
-              orderProvider.clearListeners();
-
+              // Limpiamos los listeners antes de salir
+              Provider.of<OrderProvider>(context, listen: false)
+                  .clearListeners();
               authProvider.logout();
               Navigator.of(context).pushNamedAndRemoveUntil(
                   '/', (Route<dynamic> route) => false);
@@ -215,34 +226,34 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending:
-        return Colors.orange;
+        return Colors.grey;
+      case OrderStatus.confirmed:
+        return Colors.orange; // Listo para recoger
       case OrderStatus.inProgress:
-        return Colors.blue;
+        return Colors.blueAccent; // Asignado
       case OrderStatus.outForDelivery:
-        return Colors.teal;
+        return Colors.teal; // En camino
       case OrderStatus.delivered:
         return Colors.green;
       case OrderStatus.cancelled:
         return Colors.red;
-      default:
-        return Colors.grey;
     }
   }
 
   String _getStatusText(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending:
-        return 'Pendiente de Pago';
+        return 'Pendiente';
+      case OrderStatus.confirmed:
+        return 'Confirmado';
       case OrderStatus.inProgress:
-        return 'En Proceso';
+        return 'Por Recoger';
       case OrderStatus.outForDelivery:
         return 'En Camino';
       case OrderStatus.delivered:
         return 'Entregado';
       case OrderStatus.cancelled:
         return 'Cancelado';
-      default:
-        return 'Desconocido';
     }
   }
 }

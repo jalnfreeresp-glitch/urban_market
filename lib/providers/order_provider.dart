@@ -28,7 +28,10 @@ class OrderProvider with ChangeNotifier {
   double _weeklyBalance = 0.0;
   double _monthlyBalance = 0.0;
   double _totalBalance = 0.0;
-  StreamSubscription? _dailyBalanceSub, _weeklyBalanceSub, _monthlyBalanceSub, _totalBalanceSub;
+  StreamSubscription? _dailyBalanceSub,
+      _weeklyBalanceSub,
+      _monthlyBalanceSub,
+      _totalBalanceSub;
 
   // Admin balance state
   double _platformTotalBalance = 0.0;
@@ -46,6 +49,15 @@ class OrderProvider with ChangeNotifier {
   // Admin getters
   double get platformTotalBalance => _platformTotalBalance;
   List<StoreBalance> get sellerBalances => _sellerBalances;
+
+  // ✅ NUEVO GETTER PARA EL REPARTIDOR
+  List<om.OrderModel> get inProcessOrders {
+    // Filtra la lista principal para mostrar solo los pedidos relevantes para el repartidor
+    return _orders.where((order) {
+      return order.status == om.OrderStatus.inProgress ||
+          order.status == om.OrderStatus.outForDelivery;
+    }).toList();
+  }
 
   OrderProvider(this._authProvider) {
     if (_authProvider?.isAuth ?? false) {
@@ -73,12 +85,16 @@ class OrderProvider with ChangeNotifier {
         break;
       case 'Vendedor':
         if (user.storeId != null) {
-          ordersStream = _firestoreService.getOrdersByStoreStream(user.storeId!);
-          listenToSellerBalance(user.storeId!); 
+          ordersStream =
+              _firestoreService.getOrdersByStoreStream(user.storeId!);
+          listenToSellerBalance(user.storeId!);
         }
         break;
       case 'Repartidor':
-        // You might want a specific stream for delivery persons here
+        // ✅ LÓGICA ACTUALIZADA PARA EL REPARTIDOR
+        // Escucha los pedidos que están listos para ser recogidos
+        ordersStream = _firestoreService
+            .getOrdersByStatusStream(om.OrderStatus.inProgress);
         break;
       case 'Administrador':
         ordersStream = _firestoreService.getAllOrdersStream();
@@ -110,7 +126,8 @@ class OrderProvider with ChangeNotifier {
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
     final endOfWeek = startOfWeek.add(const Duration(days: 7));
     final startOfMonth = DateTime(now.year, now.month, 1);
-    final endOfMonth = DateTime(now.year, now.month + 1, 0).add(const Duration(days: 1));
+    final endOfMonth =
+        DateTime(now.year, now.month + 1, 0).add(const Duration(days: 1));
     final veryOldDate = DateTime(2000);
 
     _dailyBalanceSub = _firestoreService
@@ -144,9 +161,11 @@ class OrderProvider with ChangeNotifier {
 
   void listenToAdminBalances() {
     _adminBalancesSub?.cancel();
-    _adminBalancesSub = _firestoreService.getAllDeliveredOrdersStream().listen((orders) {
+    _adminBalancesSub =
+        _firestoreService.getAllDeliveredOrdersStream().listen((orders) {
       // Calculate total platform balance
-      _platformTotalBalance = orders.fold(0.0, (sum, order) => sum + order.total);
+      _platformTotalBalance =
+          orders.fold(0.0, (sum, order) => sum + order.total);
 
       // Calculate balance by seller
       final Map<String, StoreBalance> balances = {};
@@ -210,7 +229,8 @@ class OrderProvider with ChangeNotifier {
     _totalBalance = 0.0;
     _platformTotalBalance = 0.0;
     _sellerBalances = [];
-    notifyListeners();
+    // Comentado para evitar notificaciones innecesarias si no hay cambios reales.
+    // notifyListeners();
   }
 
   @override
