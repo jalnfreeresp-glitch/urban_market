@@ -48,7 +48,7 @@ class AdminSellerBalancesScreen extends StatelessWidget {
                     ),
                   ),
                   trailing: Text(
-                    'S/. ${balance.total.toStringAsFixed(2)}',
+                    '\$ ${balance.total.toStringAsFixed(2)}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,

@@ -57,6 +57,16 @@ class ProductModel {
     };
   }
 
+  // ✅ --- MÉTODO AÑADIDO ---
+  /// Convierte la instancia a un mapa incluyendo el ID del producto.
+  /// Es útil para anidar este objeto dentro de otro, como en CartItemModel.
+  Map<String, dynamic> toMapWithId() {
+    final map = toMap();
+    map['id'] = id;
+    return map;
+  }
+  // --- FIN DEL MÉTODO AÑADIDO ---
+
   /// Crea una copia de la instancia actual con los campos proporcionados modificados.
   ProductModel copyWith({
     String? id,

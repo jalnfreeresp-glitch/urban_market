@@ -85,8 +85,17 @@ class OrderModel {
       storeId: data['storeId'] ?? '',
       storeName: data['storeName'] ?? '',
       items: (data['items'] as List<dynamic>?)
-              ?.map((itemData) =>
-                  CartItemModel.fromMap(itemData as Map<String, dynamic>))
+              ?.map((itemData) {
+                try {
+                  return CartItemModel.fromMap(
+                      itemData as Map<String, dynamic>);
+                } catch (e) {
+                  debugPrint('Error parsing cart item: $e');
+                  return null;
+                }
+              })
+              .where((item) => item != null)
+              .map((item) => item!)
               .toList() ??
           [],
       subtotal: (data['subtotal'] ?? 0.0).toDouble(),

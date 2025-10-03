@@ -46,6 +46,7 @@ class CartProvider with ChangeNotifier {
         quantity: existingItem.quantity + quantity,
       ),
       ifAbsent: () => cim.CartItemModel(
+        id: product.id,
         product: product,
         quantity: quantity,
       ),

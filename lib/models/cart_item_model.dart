@@ -1,50 +1,55 @@
+// lib/models/cart_item_model.dart
 import 'package:urban_market/models/product_model.dart';
 
-/// Modelo para representar un ítem dentro de un carrito de compras o una orden.
 class CartItemModel {
+  final String id;
   final ProductModel product;
   final int quantity;
 
   CartItemModel({
+    required this.id,
     required this.product,
     required this.quantity,
   });
 
-  String get productName => product.name;
-  double get price => product.price;
+  double get totalPrice => product.price * quantity;
 
-  /// Factory constructor para crear una instancia desde un mapa (leído de Firestore, usualmente anidado en una orden).
+  // --- MÉTODO CORREGIDO ---
   factory CartItemModel.fromMap(Map<String, dynamic> data) {
+    final productData = data['product'] as Map<String, dynamic>?;
+
+    // Verificamos si los datos del producto existen antes de usarlos.
+    if (productData == null) {
+      // Si no hay datos de producto, es un dato corrupto.
+      // Lanzamos un error claro en lugar de dejar que la app crashee.
+      throw StateError(
+          'Se encontró un item de carrito sin datos de producto. ID del item: ${data['id']}');
+    }
+
     return CartItemModel(
-      // Se reconstruye el objeto ProductModel a partir del mapa anidado.
-      // Esto asume que el mapa 'product' contiene todos los campos necesarios.
-      product: ProductModel.fromMap(
-          data['product']['id'] ?? '', // Extrae el id del mapa anidado
-          data['product'] as Map<String, dynamic>),
-      quantity: data['quantity'] ?? 0,
+      // Usamos '??' para proveer valores por defecto en caso de que un campo sea nulo.
+      id: data['id'] ?? '',
+      product: ProductModel.fromMap(productData['id'] ?? '', productData),
+      quantity: data['quantity'] ?? 1,
     );
   }
 
-  /// Convierte la instancia a un mapa para guardarlo en Firestore.
   Map<String, dynamic> toMap() {
-    // Se llama al toMap() del producto para crear un mapa anidado.
-    final productMap = product.toMap();
-    // Es importante asegurarse de que el 'id' esté en el mapa anidado
-    // para poder reconstruirlo después con fromMap.
-    productMap['id'] = product.id;
-
     return {
-      'product': productMap,
+      'id': id,
+      'product': product
+          .toMapWithId(), // Asegúrate de que este método exista en ProductModel
       'quantity': quantity,
     };
   }
 
-  /// Crea una copia de la instancia actual con los campos proporcionados modificados.
   CartItemModel copyWith({
+    String? id,
     ProductModel? product,
     int? quantity,
   }) {
     return CartItemModel(
+      id: id ?? this.id,
       product: product ?? this.product,
       quantity: quantity ?? this.quantity,
     );

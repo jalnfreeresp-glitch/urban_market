@@ -180,7 +180,7 @@ class CartScreen extends StatelessWidget {
                             ),
                             title: Text(product.name),
                             subtitle: Text(
-                                'S/. ${product.price.toStringAsFixed(2)} x ${cartItem.quantity}'),
+                                '\$ ${product.price.toStringAsFixed(2)} x ${cartItem.quantity}'),
                             trailing: IconButton(
                               icon: const Icon(Icons.remove_shopping_cart,
                                   color: Colors.red),
@@ -204,7 +204,7 @@ class CartScreen extends StatelessWidget {
                                     fontSize: 20, fontWeight: FontWeight.bold)),
                             Chip(
                               label: Text(
-                                'S/. ${cart.totalAmount.toStringAsFixed(2)}',
+                                '\$ ${cart.totalAmount.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,

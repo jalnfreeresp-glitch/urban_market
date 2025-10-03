@@ -12,6 +12,7 @@ interface CreateUserData {
   name: string;
   phone: string;
   role: string;
+  storeId?: string;
 }
 
 // --- Función para crear un nuevo usuario (SOLO ADMIN) ---
@@ -24,7 +25,7 @@ export const createUser = functions.https.onCall(async (request) => {
   }
 
   const data = request.data as CreateUserData;
-  const {email, password, name, phone, role} = data;
+  const {email, password, name, phone, role, storeId} = data;
 
   try {
     const userRecord = await admin.auth().createUser({
@@ -39,6 +40,7 @@ export const createUser = functions.https.onCall(async (request) => {
       email: email,
       phone: phone,
       role: role,
+      storeId: storeId,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       isActive: true,
     });

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:urban_market/models/product_model.dart' as pm;
 import 'package:urban_market/models/store_model.dart' as sm;
-import 'package:urban_market/screens/admin/admin_dashboard_screen.dart';
+import 'package:urban_market/screens/admin/admin_home_screen.dart';
 import 'package:urban_market/screens/admin/admin_seller_balances_screen.dart';
 import 'package:urban_market/screens/admin/manage_orders_screen.dart';
 import 'package:urban_market/screens/admin/manage_stores_screen.dart';
@@ -18,20 +18,12 @@ import 'package:urban_market/screens/seller/orders_screen.dart';
 import 'package:urban_market/screens/seller/products_screen.dart';
 import 'package:urban_market/screens/seller/seller_home_screen.dart';
 
-// NOTA: Se eliminó la importación de 'admin_home_screen.dart' porque no se usaba
-// y estaba siendo redirigida al dashboard.
-
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       // --- Rutas de Administrador ---
-      case AdminDashboardScreen.routeName:
-        return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
-
-      // Esta ruta redirige al dashboard, lo que parece ser la intención.
-      // Si AdminHomeScreen existe y es diferente, puedes cambiar el constructor.
-      case '/admin-home': // Usamos un String directo si AdminHomeScreen.routeName causa problemas
-        return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
+      case AdminHomeScreen.routeName:
+        return MaterialPageRoute(builder: (_) => const AdminHomeScreen());
 
       case ManageStoresScreen.routeName:
         return MaterialPageRoute(builder: (_) => const ManageStoresScreen());

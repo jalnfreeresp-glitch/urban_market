@@ -81,7 +81,7 @@ class OrdersScreen extends StatelessWidget {
                           ),
                         const SizedBox(height: 8),
                         Text(
-                          'Total: S/. ${order.total.toStringAsFixed(2)}',
+                          'Total: \$ ${order.total.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -92,14 +92,13 @@ class OrdersScreen extends StatelessWidget {
                           'Productos:',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        ...order.items
-                            .map((item) => ListTile(
-                                  leading: const Icon(Icons.shopping_basket),
-                                  title: Text(item.product.name),
-                                  subtitle: Text('Cantidad: ${item.quantity}'),
-                                  trailing: Text(
-                                      'S/. ${(item.product.price * item.quantity).toStringAsFixed(2)}'),
-                                )),
+                        ...order.items.map((item) => ListTile(
+                              leading: const Icon(Icons.shopping_basket),
+                              title: Text(item.product.name),
+                              subtitle: Text('Cantidad: ${item.quantity}'),
+                              trailing: Text(
+                                  '\$ ${(item.product.price * item.quantity).toStringAsFixed(2)}'),
+                            )),
                         if (order.deliveryPersonName != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 8.0),

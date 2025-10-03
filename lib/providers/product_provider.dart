@@ -30,10 +30,14 @@ class ProductProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
 
   ProductProvider(this._authProvider) {
-    _listenToActiveProducts();
-    _listenToActiveStores();
-    if (_authProvider?.user?.role == 'Vendedor') {
+    final userRole = _authProvider?.user?.role;
+
+    if (userRole == 'Vendedor') {
       listenToSellerProducts();
+    } else {
+      // For customers, admins, and logged-out users
+      _listenToActiveProducts();
+      _listenToActiveStores();
     }
   }
 

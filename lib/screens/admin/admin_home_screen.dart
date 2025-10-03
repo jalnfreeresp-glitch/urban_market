@@ -1,9 +1,12 @@
 // lib/screens/admin/admin_home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:urban_market/providers/auth_provider.dart';
+import 'package:urban_market/models/order_model.dart' as om;
+import 'package:urban_market/models/user_model.dart' as um;
+import 'package:urban_market/providers/auth_provider.dart' as auth;
 import 'package:urban_market/providers/order_provider.dart';
 import 'package:urban_market/providers/product_provider.dart';
+import 'package:urban_market/services/firestore_service.dart';
 import 'package:urban_market/widgets/admin_balance_card.dart';
 
 class AdminHomeScreen extends StatefulWidget {
@@ -19,9 +22,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<OrderProvider>(context, listen: false).listenToOrders();
-    });
+    // Data is now loaded by providers automatically
   }
 
   @override
@@ -36,7 +37,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildDrawer(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<auth.AuthProvider>(context, listen: false);
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -86,7 +87,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               Navigator.pushNamed(context, '/admin-manage-orders');
             },
           ),
-          const Divider(),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Cerrar Sesión'),
@@ -111,6 +111,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildBody(BuildContext context) {
+    final orderProvider = Provider.of<OrderProvider>(context);
+    final productProvider = Provider.of<ProductProvider>(context);
+
+    if (orderProvider.isLoading || productProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -120,12 +127,66 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             const Text('Bienvenido, Administrador',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
+            _buildStatsCard(),
+            const SizedBox(height: 20),
             const AdminBalanceCard(), // New Balance Card
             const SizedBox(height: 20),
             _buildQuickActions(context),
+            const SizedBox(height: 20),
+            _buildRecentOrders(context),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStatsCard() {
+    final firestoreService = FirestoreService();
+    return StreamBuilder<List<um.UserModel>>(
+      stream: firestoreService.getUsersStream(),
+      builder: (context, userSnapshot) {
+        if (userSnapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return Consumer2<ProductProvider, OrderProvider>(
+          builder: (context, productProvider, orderProvider, child) {
+            final tiendas = productProvider.stores.length.toString();
+            final pedidos = orderProvider.orders.length.toString();
+            final usuarios = userSnapshot.hasData
+                ? userSnapshot.data!.length.toString()
+                : '0';
+
+            return Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatItem('Tiendas', tiendas, Icons.store),
+                    _buildStatItem('Pedidos', pedidos, Icons.shopping_cart),
+                    _buildStatItem('Usuarios', usuarios, Icons.people),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatItem(String title, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, size: 30, color: Colors.deepPurple),
+        const SizedBox(height: 8),
+        Text(value,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
     );
   }
 
@@ -161,12 +222,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 Icons.receipt_long,
                 Colors.orange,
                 () => Navigator.pushNamed(context, '/admin-manage-orders')),
-            _buildActionCard(
-                context,
-                'Panel de Control',
-                Icons.dashboard,
-                Colors.purple,
-                () => Navigator.pushNamed(context, '/admin-dashboard')),
           ],
         ),
       ],
@@ -192,5 +247,61 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildRecentOrders(BuildContext context) {
+    final orderProvider = Provider.of<OrderProvider>(context);
+    final orders = orderProvider.orders.take(5).toList();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Pedidos Recientes',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            if (orders.isEmpty)
+              const Text('No hay pedidos recientes.')
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: orders.length,
+                itemBuilder: (context, index) {
+                  final order = orders[index];
+                  return ListTile(
+                    title: Text('Pedido #${order.id.substring(0, 6)}'),
+                    subtitle: Text('Cliente: ${order.userName}'),
+                    trailing: Chip(
+                      label: Text(order.status.name),
+                      backgroundColor: _getStatusColor(order.status),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(om.OrderStatus status) {
+    switch (status) {
+      case om.OrderStatus.pending:
+        return Colors.orange;
+      case om.OrderStatus.confirmed:
+        return Colors.blueAccent;
+      case om.OrderStatus.inProgress:
+        return Colors.blue;
+      case om.OrderStatus.outForDelivery:
+        return Colors.purple;
+      case om.OrderStatus.delivered:
+        return Colors.green;
+      case om.OrderStatus.cancelled:
+        return Colors.red;
+    }
   }
 }

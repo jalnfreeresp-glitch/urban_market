@@ -2,12 +2,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:urban_market/models/store_model.dart';
 import 'package:urban_market/models/user_model.dart' as um;
-import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/services/firestore_service.dart';
 import 'package:urban_market/widgets/admin_drawer.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 
 class ManageUsersScreen extends StatefulWidget {
   static const routeName = '/admin-manage-users';
@@ -87,13 +87,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                         });
                       },
                     ),
-                    if (user != null && selectedRole == 'Vendedor')
+                    if (selectedRole == 'Vendedor')
                       TextFormField(
                         controller: storeIdController,
-                        readOnly: true,
                         decoration: const InputDecoration(
-                          labelText: 'ID de Tienda Asignada',
-                          hintText: 'Asignada desde la lista de usuarios',
+                          labelText: 'ID de Tienda (Opcional)',
                         ),
                       ),
                   ],
@@ -108,17 +106,22 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
               ElevatedButton(
                 onPressed: () async {
                   if (formKey.currentState!.validate()) {
-                    final authProvider = context.read<AuthProvider>();
                     try {
                       if (user == null) {
-                        await authProvider.signup(
-                          email: emailController.text,
-                          password: passwordController.text,
-                          name: nameController.text,
-                          phone: phoneController.text,
-                          role: selectedRole,
-                          address: '',
-                        );
+                        // Force refresh of the ID token to ensure it has the latest claims
+                        await fb_auth.FirebaseAuth.instance.currentUser
+                            ?.getIdToken(true);
+
+                        final functions = FirebaseFunctions.instance;
+                        final callable = functions.httpsCallable('createUser');
+                        await callable.call(<String, dynamic>{
+                          'email': emailController.text,
+                          'password': passwordController.text,
+                          'name': nameController.text,
+                          'phone': phoneController.text,
+                          'role': selectedRole,
+                          'storeId': storeIdController.text,
+                        });
                       } else {
                         final updatedUser = user.copyWith(
                             name: nameController.text,
@@ -133,10 +136,12 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                       if (!context.mounted) return;
                       Navigator.of(context).pop();
                     } catch (e) {
+                      debugPrint("Error creating user: $e");
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Error: $e'),
+                          content: Text(
+                              'Error al crear usuario. Ver consola para detalles.'),
                           backgroundColor: Colors.red,
                         ),
                       );

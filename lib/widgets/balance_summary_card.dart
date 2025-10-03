@@ -33,7 +33,7 @@ class BalanceSummaryCard extends StatelessWidget {
             const SizedBox(height: 16),
             Center(
               child: Text(
-                'S/. ${totalBalance.toStringAsFixed(2)}',
+                '\$ ${totalBalance.toStringAsFixed(2)}',
                 style: const TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,

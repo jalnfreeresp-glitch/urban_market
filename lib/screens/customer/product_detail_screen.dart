@@ -47,7 +47,7 @@ class ProductDetailScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
-                'S/. ${product.price.toStringAsFixed(2)}',
+                '\$ ${product.price.toStringAsFixed(2)}',
                 style: TextStyle(
                   fontSize: 24,
                   color: Colors.grey[800],
@@ -83,12 +83,13 @@ class ProductDetailScreen extends StatelessWidget {
                 ),
                 onPressed: () {
                   try {
-                    cart.addItem(product);
+                    cart.addItem(product, quantity: 1);
                     ScaffoldMessenger.of(context)
                         .hideCurrentSnackBar(); // Oculta la anterior si existe
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('${product.name} fue añadido al carrito.'),
+                        content:
+                            Text('${product.name} fue añadido al carrito.'),
                         duration: const Duration(seconds: 2),
                       ),
                     );

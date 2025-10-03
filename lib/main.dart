@@ -9,16 +9,22 @@ import 'package:urban_market/providers/auth_provider.dart';
 import 'package:urban_market/providers/cart_provider.dart';
 import 'package:urban_market/providers/order_provider.dart';
 import 'package:urban_market/providers/product_provider.dart';
-import 'package:urban_market/screens/admin/admin_dashboard_screen.dart'; // Agregar esta línea
+import 'package:urban_market/screens/admin/admin_home_screen.dart';
 import 'package:urban_market/screens/customer/customer_home_screen.dart';
 import 'package:urban_market/screens/delivery/delivery_home_screen.dart';
 import 'package:urban_market/screens/login_screen.dart';
 import 'package:urban_market/screens/seller/seller_home_screen.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug,
+    appleProvider: AppleProvider.debug,
   );
 
   runApp(
@@ -90,7 +96,7 @@ class AuthWrapper extends StatelessWidget {
       case 'vendedor':
         return const SellerHomeScreen();
       case 'administrador':
-        return const AdminDashboardScreen(); // Cambiado a AdminDashboardScreen
+        return const AdminHomeScreen();
       case 'repartidor':
         return const DeliveryHomeScreen();
       default:

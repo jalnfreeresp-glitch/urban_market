@@ -49,7 +49,7 @@ class _SellerBalanceCardState extends State<SellerBalanceCard> {
             const SizedBox(height: 16),
             Center(
               child: Text(
-                'S/. ${balance.toStringAsFixed(2)}',
+                '\$ ${balance.toStringAsFixed(2)}',
                 style: const TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,

@@ -101,7 +101,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                   final finalQuantity =
                       int.tryParse(quantityController.text) ?? 1;
                   if (finalQuantity > 0 && finalQuantity <= product.stock) {
-                    cartProvider.addItem(product);
+                    cartProvider.addItem(product, quantity: finalQuantity);
                     Navigator.of(ctx).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -183,7 +183,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'S/. ${product.price.toStringAsFixed(2)}',
+                        '\$ ${product.price.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

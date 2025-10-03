@@ -26,7 +26,7 @@ class OrderCard extends StatelessWidget {
           children: [
             Text('Cliente: ${order.userName}'),
             Text('Tienda: ${order.storeName}'),
-            Text('Total: S/. ${order.total.toStringAsFixed(2)}'),
+            Text('Total: \$ ${order.total.toStringAsFixed(2)}'),
           ],
         ),
         trailing: Chip(

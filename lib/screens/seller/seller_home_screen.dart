@@ -20,12 +20,12 @@ class SellerHomeScreen extends StatefulWidget {
 class _SellerHomeScreenState extends State<SellerHomeScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   StoreModel? _store;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Initialize listeners for orders and balances
       Provider.of<OrderProvider>(context, listen: false).listenToOrders();
       _fetchStore();
     });
@@ -38,6 +38,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
       if (mounted) {
         setState(() {
           _store = store;
+          _isLoading = false;
         });
       }
     }
@@ -52,9 +53,37 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
         foregroundColor: Colors.white,
       ),
       drawer: _buildDrawer(context),
-      body: _store == null
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _buildBody(context),
+          : _store == null
+              ? _buildNoStoreWidget()
+              : _buildBody(context),
+    );
+  }
+
+  Widget _buildNoStoreWidget() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.store_mall_directory_outlined, size: 80, color: Colors.grey),
+            SizedBox(height: 20),
+            Text(
+              'Aún no tienes una tienda asignada',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Por favor, contacta a un administrador para que te asigne una tienda y puedas empezar a vender.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -226,4 +255,3 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
     );
   }
 }
-
